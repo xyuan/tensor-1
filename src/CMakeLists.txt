@@ -12,12 +12,13 @@ endif()
 
 set(GQTEN_HEADERS_DIR ${GQTEN_HEADER_PATH}/gqten)
 set(GQTEN_BASIC_SRC
-  utils.cc
-  timer.cc
-  ten_trans.cc
+  #utils.cc
+  #timer.cc
+  #ten_trans.cc
   qn.cc
-  qnsector.cc
-  index.cc)
+  #qnsector.cc
+  #index.cc
+  )
 
 
   add_library(gqten
