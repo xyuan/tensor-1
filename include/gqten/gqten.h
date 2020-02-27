@@ -9,63 +9,127 @@
 #define GQTEN_GQTEN_H
 
 
-#include <string>
-#include <vector>
-#include <fstream>
-#include <cmath>
+#include <string>     // string
+#include <vector>     // vector
+//#include <cmath>
+#include <iostream>   // istream, ostream
+#include <memory>     // shared_ptr
 
-#include "gqten/detail/fwd_dcl.h"
-#include "gqten/detail/consts.h"
-#include "gqten/detail/value_t.h"
+//#include "gqten/detail/fwd_dcl.h"
+//#include "gqten/detail/consts.h"
+//#include "gqten/detail/value_t.h"
+#include "gqten/detail/framework.h"
 
 
 namespace gqten {
 
 
-//// Quantum number.
-//struct QNNameVal {
-  //QNNameVal() = default;
-  //QNNameVal(const std::string &nm, const long val): name(nm), val(val) {}
+// Abstract base class for quantum number value
+class QNVal : public Hashable, public Streamable {
+public:
+  QNVal(void) = default;
+  virtual ~QNVal(void) = default;
 
-  //std::string name;
-  //long val;
-//};
+  virtual QNVal *Clone(void) const = 0;
 
-//class QN {
-//friend std::ifstream &bfread(std::ifstream &, QN &);
-//friend std::ofstream &bfwrite(std::ofstream &, const QN &);
+  virtual QNVal *Minus(void) const = 0;
+  virtual void AddAssign(const QNVal *) = 0;
 
-//public:
-  //QN(void);
-  //QN(const std::vector<QNNameVal> &);
-  //QN(const std::vector<long> &);
 
-  //QN(const QN &);
-  //QN &operator=(const QN &);
+  virtual bool operator==(const QNVal &rhs) {
+    return this->Hash() == rhs.Hash();
+  }
 
-  //std::size_t Hash(void) const;
+  virtual bool operator!=(const QNVal &rhs) { return !(*this == rhs); }
+};
 
-  //QN operator-(void) const;
-  //QN &operator+=(const QN &);
+using QNValPtrVec = std::vector<QNVal *>;
+using QNValSharedPtr = std::shared_ptr<QNVal>;
 
-//private:
-  //std::vector<long> values_;
-  //std::size_t hash_;
 
-  //std::size_t CalcHash(void) const;
-//};
+// Abelian quantum number value
+class AbelQNVal : public QNVal {
+public:
+  AbelQNVal(const long val) : val_(val) {}
+  AbelQNVal(void) : AbelQNVal(0) {}
 
-//QN operator+(const QN &, const QN &);
+  AbelQNVal *Clone(void) const { return new AbelQNVal(val_); }
 
-//QN operator-(const QN &, const QN &);
+  AbelQNVal *Minus(void) const { return new AbelQNVal(-val_); }
 
-//bool operator==(const QN &, const QN &);
+  void AddAssign(const QNVal *prhs_b) {
+    auto prhs_d = static_cast<const AbelQNVal *>(prhs_b);   // Do safe downcasting
+    val_ += prhs_d->val_;
+  }
 
-//bool operator!=(const QN &, const QN &);
+  // Override for Hashable base class
+  std::size_t Hash(void) const { return hasher_(val_); }
 
-//std::ifstream &bfread(std::ifstream &, QN &);
+  // Override for Streamable base class
+  void StreamRead(std::istream &is) { is >> val_; }
+  void StreamWrite(std::ostream &os) const { os << val_ << std::endl; }
 
-//std::ofstream &bfwrite(std::ofstream &, const QN &);
+private:
+  long val_;
+  std::hash<long> hasher_;
+};
+
+using NormalQNVal = AbelQNVal;
+
+
+// Quantum number card for name-value pair
+class QNCard {
+public:
+  QNCard(const std::string &name, const QNVal &val) :
+      name_(name), pval_(val.Clone()) {}
+
+  QNValSharedPtr GetValPtr(void) const { return pval_; }
+
+private:
+  QNValSharedPtr pval_;
+  std::string name_;
+};
+
+using QNCardVec = std::vector<QNCard>;
+
+
+// Quantum number class
+template <typename... QNValTs>
+class QN : public Hashable, public Streamable {
+public:
+  QN(void);
+  QN(const QNCardVec &);
+  ~QN(void);
+
+  QN(const QN &);
+  QN &operator=(const QN &);
+
+  QN operator-(void) const;
+  QN &operator+=(const QN &);
+
+  QN operator+(const QN &rhs) const {
+    QN sum(*this);
+    sum += rhs;
+    return sum;
+  }
+  QN operator-(const QN &rhs) const { return (*this) + (-rhs); }
+
+  bool operator==(const QN &rhs) const { return hash_ == rhs.hash_; }
+  bool operator!=(const QN &rhs) const { return !(*this == rhs); }
+
+  std::size_t Hash(void) const { return hash_; }
+
+  void StreamRead(std::istream &);
+  void StreamWrite(std::ostream &) const;
+
+private:
+  QNValPtrVec qnvals_;
+  std::size_t hash_;
+
+  std::size_t CalcHash(void) const;
+
+  QN(const QNValPtrVec &);    // Intra used private constructor
+};
 
 
 //// Quantum number sector.
@@ -535,7 +599,8 @@ private:
 } /* gqten */ 
 
 
-//// Include implementation details.
+// Include implementation details.
+#include "gqten/detail/qn_impl.h"
 //#include "gqten/detail/qnblock_impl.h"
 //#include "gqten/detail/gqtensor_impl.h"
 //#include "gqten/detail/ten_ctrct_impl.h"

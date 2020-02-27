@@ -33,6 +33,9 @@ macro(add_unittest
 endmacro()
 
 
+# Test quantum number value object.
+add_unittest(test_qnval test_qnval.cc "" "" "${MATH_LIB_LINK_FLAGS}")
+
 # Test quantum number object.
 add_unittest(test_qn test_qn.cc "" "" "${MATH_LIB_LINK_FLAGS}")
 

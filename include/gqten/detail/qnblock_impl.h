@@ -3,7 +3,7 @@
 * Author: Rongyang Sun <sun-rongyang@outlook.com>
 * Creation Date: 2019-09-11 15:24
 * 
-* Description: GraceQ/tensor project. Implementation details for quantum number class template.
+* Description: GraceQ/tensor project. Implementation details for quantum number block class template.
 */
 #include <assert.h>
 
