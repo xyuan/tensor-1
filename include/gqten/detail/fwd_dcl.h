@@ -15,9 +15,11 @@
 namespace gqten {
 
 
+template <typename ...>
 class QN;
 
 
+template <typename>
 class QNSector;
 
 

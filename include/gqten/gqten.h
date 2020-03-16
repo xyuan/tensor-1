@@ -24,7 +24,7 @@
 
 //#include "gqten/detail/fwd_dcl.h"
 //#include "gqten/detail/consts.h"
-//#include "gqten/detail/value_t.h"
+#include "gqten/detail/value_t.h"
 #include "gqten/detail/framework.h"
 
 
@@ -139,7 +139,46 @@ private:
 };
 
 
-//// Quantum number sector.
+// Quantum number sector.
+template <typename QNT>
+class QNSector : public Hashable, public Streamable {
+public:
+  QNSector(const QNT &qn, const QNSectorDimT_ dim) : qn(qn), dim(dim) {
+    hash_ = CalcHash();
+  }
+  QNSector(void) : QNSector(QNT(), 0) {}
+
+  QNSector(const QNSector &qnsct) :
+      qn(qnsct.qn), dim(qnsct.dim), hash_(qnsct.hash_) {}
+  QNSector &operator=(const QNSector &rhs) {
+    qn = rhs.qn;
+    dim = rhs.dim;
+    hash_ = rhs.hash_;
+    return *this;
+  }
+
+  bool operator==(const QNSector &rhs) const { return hash_ == rhs.hash_; }
+  bool operator!=(const QNSector &rhs) const { return !(*this == rhs); }
+
+  std::size_t Hash(void) const { return hash_; }
+
+  void StreamRead(std::istream &is) {
+    is >> qn >> dim >> hash_;
+  }
+
+  void StreamWrite(std::ostream &os) const {
+    os << qn;
+    os << dim << std::endl;
+    os << hash_ << std::endl;
+  }
+
+  QNT qn;
+  QNSectorDimT_ dim;
+
+private:
+  std::size_t CalcHash(void) const { return qn.Hash() ^ dim; }
+  std::size_t hash_;
+};
 //class QNSector {
 //friend std::ifstream &bfread(std::ifstream &, QNSector &);
 //friend std::ofstream &bfwrite(std::ofstream &, const QNSector &);

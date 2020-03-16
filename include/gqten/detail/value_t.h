@@ -17,15 +17,21 @@
 namespace gqten {
 
 
+// Public using types
 using GQTEN_Double = double;
 using GQTEN_Complex = std::complex<GQTEN_Double>;
 
 
 using DGQTensor = GQTensor<GQTEN_Double>;
 using ZGQTensor = GQTensor<GQTEN_Complex>;
+
+
+// Intra using types
+using QNSectorDimT_ = unsigned int;
 } /* gqten */ 
 
 
+// Redefine the complex number type for MKL
 #define MKL_Complex16 gqten::GQTEN_Complex
 
 
