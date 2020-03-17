@@ -23,6 +23,7 @@ template <typename>
 class QNSector;
 
 
+template <typename>
 class QNSectorSet;
 
 

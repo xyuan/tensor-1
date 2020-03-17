@@ -42,8 +42,8 @@ add_unittest(test_qn test_qn.cc "" "" "${MATH_LIB_LINK_FLAGS}")
 # Test quantum number sector object.
 add_unittest(test_qnsector test_qnsector.cc "" "" "${MATH_LIB_LINK_FLAGS}")
 
-## Test quantum number sector set object.
-#add_unittest(test_qnsectorset test_qnsectorset.cc "" "" "${MATH_LIB_LINK_FLAGS}")
+# Test quantum number sector set object.
+add_unittest(test_qnsectorset test_qnsectorset.cc "" "" "${MATH_LIB_LINK_FLAGS}")
 
 ## Test index object.
 #add_unittest(test_index test_index.cc "" "" "${MATH_LIB_LINK_FLAGS}")

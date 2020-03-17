@@ -179,57 +179,34 @@ private:
   std::size_t CalcHash(void) const { return qn.Hash() ^ dim; }
   std::size_t hash_;
 };
-//class QNSector {
-//friend std::ifstream &bfread(std::ifstream &, QNSector &);
-//friend std::ofstream &bfwrite(std::ofstream &, const QNSector &);
 
-//public:
-  //QNSector(const QN &qn, const long dim) : qn(qn), dim(dim) {
-    //hash_ = CalcHash();
-  //}
-  //QNSector(void) : QNSector(QN(), 0) {}
+template <typename QNT>
+using QNSectorVec = std::vector<QNSector<QNT>>;
 
-  //QNSector(const QNSector &qns) : qn(qns.qn), dim(qns.dim), hash_(qns.hash_) {}
-  //QNSector &operator=(const QNSector &rhs);
-
-  //size_t Hash(void) const { return hash_; }
-
-  //QN qn;
-  //long dim;
-
-//private:
-  //size_t CalcHash(void) const { return qn.Hash() ^ dim; }
-  //size_t hash_;
-//};
-
-//bool operator==(const QNSector &, const QNSector &);
-
-//bool operator!=(const QNSector &, const QNSector &);
-
-//std::ifstream &bfread(std::ifstream &, QNSector &);
-
-//std::ofstream &bfwrite(std::ofstream &, const QNSector &);
+template <typename QNT>
+using ConstQNSectorPtrVec = std::vector<const QNSector<QNT> *>;
 
 
-//// Quantum number sector set.
-//class QNSectorSet {
-//public:
-  //QNSectorSet(void) {}
-  //QNSectorSet(const std::vector<QNSector> &qnscts) : qnscts(qnscts) {}
-  //QNSectorSet(const std::vector<const QNSector*> &);
+// Quantum number sector set.
+template <typename QNT>
+class QNSectorSet : public Hashable {   // Only hashable here
+public:
+  QNSectorSet(void) {}
+  QNSectorSet(const QNSectorVec<QNT> &qnscts) : qnscts(qnscts) {}
+  QNSectorSet(const ConstQNSectorPtrVec<QNT> &pqnscts) {
+    for (auto &pqnsct : pqnscts) { qnscts.push_back(*pqnsct); }
+  }
+  virtual ~QNSectorSet() = default;
 
-  //QNSectorSet(const QNSectorSet &qnss) : qnscts(qnss.qnscts) {}
+  QNSectorSet(const QNSectorSet &qnss) : qnscts(qnss.qnscts) {}
 
-  //virtual ~QNSectorSet() = default;
+  bool operator==(const QNSectorSet &rhs) const { return Hash() == rhs.Hash(); }
+  bool operator!=(const QNSectorSet &rhs) const { return !(*this == rhs); }
 
-  //virtual size_t Hash(void) const;
+  std::size_t Hash(void) const { return VecHasher(qnscts); }
 
-  //std::vector<QNSector> qnscts;
-//};
-
-//bool operator==(const QNSectorSet &, const QNSectorSet &);
-
-//bool operator!=(const QNSectorSet &, const QNSectorSet &);
+  QNSectorVec<QNT> qnscts;
+};
 
 
 //// Index.
