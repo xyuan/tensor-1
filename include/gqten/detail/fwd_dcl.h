@@ -27,6 +27,7 @@ template <typename>
 class QNSectorSet;
 
 
+template <typename>
 class Index;
 
 

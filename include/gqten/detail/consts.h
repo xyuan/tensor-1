@@ -23,5 +23,10 @@ const double kDoubleEpsilon = 1.0E-15;
 
 // Default tensor transpose threads number.
 const int kTensorTransposeDefaultNumThreads = 4;
+
+
+// Intra used constants
+// Empty string
+const std::string kEmptyStr_ = "";
 } /* gqten */ 
 #endif /* ifndef GQTEN_DETAIL_CONSTS_H */

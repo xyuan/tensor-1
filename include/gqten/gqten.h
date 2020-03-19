@@ -12,7 +12,8 @@
 #define GQTEN_VERSION_MAJOR 0
 #define GQTEN_VERSION_MINOR 1
 #define GQTEN_VERSION_PATCH 0
-// GQTEN_VERSION_DEVSTR to describe the development status, for example the git branch
+// GQTEN_VERSION_DEVSTR to describe the development status,
+// for example the git branch name
 #define GQTEN_VERSION_DEVSTR "dev-qn"
 
 
@@ -23,7 +24,7 @@
 #include <memory>     // shared_ptr
 
 //#include "gqten/detail/fwd_dcl.h"
-//#include "gqten/detail/consts.h"
+#include "gqten/detail/consts.h"
 #include "gqten/detail/value_t.h"
 #include "gqten/detail/framework.h"
 
@@ -209,77 +210,92 @@ public:
 };
 
 
-//// Index.
-//#define NDIR "NDIR"
-//#define IN "IN"
-//#define OUT "OUT"
+// Index.
+#define NDIR "NDIR"
+#define IN "IN"
+#define OUT "OUT"
 
-//struct InterOffsetQnsct {
-  //InterOffsetQnsct(const long &inter_offset, const QNSector &qnsct) :
-      //inter_offset(inter_offset), qnsct(qnsct) {}
-  //long inter_offset;
-  //QNSector qnsct;
-//};
 
-//class Index : public QNSectorSet {
-//friend std::ifstream &bfread(std::ifstream &, Index &);
-//friend std::ofstream &bfwrite(std::ofstream &, const Index &);
+template <typename QNT>
+struct InterOffsetQnsct {
+  InterOffsetQnsct(const IndexDimT_ &inter_offset, const QNSector<QNT> &qnsct) :
+      inter_offset(inter_offset), qnsct(qnsct) {}
+  IndexDimT_ inter_offset;
+  QNSector<QNT> qnsct;
+};
 
-//public:
-  //Index(void) : QNSectorSet(), dim(0), dir(NDIR), tag("") {}
 
-  //Index(
-      //const std::vector<QNSector> &qnscts,
-      //const std::string &dir,
-      //const std::string &tag) : QNSectorSet(qnscts), dir(dir), tag(tag) {
-    //dim = CalcDim(); 
-  //}
-  //Index(const std::vector<QNSector> &qnscts) : Index(qnscts, NDIR, "") {}
-  //Index(const std::vector<QNSector> &qnscts, const std::string &dir) :
-      //Index(qnscts, dir, "") {}
+template <typename QNT>
+class Index : public QNSectorSet<QNT>, public Streamable {
+public:
+  using QNSectorVecT = QNSectorVec<QNT>;
+  using QNSctSetT = QNSectorSet<QNT>;
 
-  //Index(const Index &index) :
-      //QNSectorSet(index.qnscts),
-      //dim(index.dim), dir(index.dir), tag(index.tag) {}
-  //Index &operator=(const Index &rhs) {
-    //qnscts = rhs.qnscts;
-    //dim = rhs.dim;
-    //dir = rhs.dir;
-    //tag = rhs.tag;
-    //return *this;
-  //}
+  Index(void) : QNSctSetT(), dim(0), dir(NDIR), tag(kEmptyStr_) {}
+  Index(
+      const QNSectorVecT &qnscts,
+      const std::string &dir,
+      const std::string &tag) : QNSctSetT(qnscts), dir(dir), tag(tag) {
+      dim = CalcDim();
+  }
+  Index(const QNSectorVecT &qnscts) : Index(qnscts, NDIR, kEmptyStr_) {}
+  Index(const QNSectorVecT &qnscts, const std::string &dir) :
+      Index(qnscts, dir, kEmptyStr_) {}
 
-  //size_t Hash(void) const override;
-  //InterOffsetQnsct CoorInterOffsetAndQnsct(const long) const;
+  Index(const Index &index) :
+      Index(index.qnscts, index.dim, index.dir, index.tag) {}
+  Index &operator=(const Index &rhs) {
+    QNSctSetT::qnscts = rhs.qnscts;
+    dim = rhs.dim;
+    dir = rhs.dir;
+    tag = rhs.tag;
+    return *this;
+  }
 
-  //// Inplace operations.
-  //void Dag(void) {
-    //if (dir == IN) {
-      //dir = OUT;
-    //} else if (dir == OUT) {
-      //dir = IN;
-    //}
-  //}
+  IndexDimT_ CalcDim(void) {
+    IndexDimT_ dim = 0;
+    for (auto &qnsct : QNSctSetT::qnscts) {
+      dim += qnsct.dim;
+    }
+    return dim;
+  }
 
-  //// Operators overloading.
-  //bool operator==(const Index &rhs) const { return  Hash() ==  rhs.Hash(); }
+  bool operator==(const Index &rhs) const { return  Hash() ==  rhs.Hash(); }
 
-  //long CalcDim(void) {
-    //long dim = 0;
-    //for (auto &qnsct : qnscts) {
-      //dim += qnsct.dim;
-    //}
-    //return dim;
-  //}
+  InterOffsetQnsct<QNT> CoorInterOffsetAndQnsct(const long) const;
 
-  //long dim;
-  //std::string dir;
-  //std::string tag;
-//};
+  // Inplace inverse operation
+  void Dag(void) {
+    if (dir == IN) {
+      dir = OUT;
+    } else if (dir == OUT) {
+      dir = IN;
+    }
+  }
 
-//std::ifstream &bfread(std::ifstream &, Index &);
+  std::size_t Hash(void) const { return QNSctSetT::Hash() ^ str_hasher_(tag); }
 
-//std::ofstream &bfwrite(std::ofstream &, const Index &);
+  void StreamRead(std::istream &);
+  void StreamWrite(std::ostream &) const;
+
+  IndexDimT_ dim;
+  std::string dir;
+  std::string tag;
+
+private:
+  Index(
+      const QNSectorVecT &qnscts,
+      const IndexDimT_ dim,
+      const std::string &dir,
+      const std::string &tag
+  ) : QNSctSetT(qnscts), dim(dim), dir(dir), tag(tag) {}
+
+  std::hash<std::string> str_hasher_;
+};
+
+
+template <typename IndexT>
+IndexT InverseIndex(const IndexT &);
 
 
 //// Dense block labeled by the quantum number.
@@ -624,6 +640,7 @@ private:
 
 // Include implementation details.
 #include "gqten/detail/qn_impl.h"
+#include "gqten/detail/index_impl.h"
 //#include "gqten/detail/qnblock_impl.h"
 //#include "gqten/detail/gqtensor_impl.h"
 //#include "gqten/detail/ten_ctrct_impl.h"

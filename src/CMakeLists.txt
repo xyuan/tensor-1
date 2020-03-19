@@ -15,9 +15,7 @@ set(GQTEN_BASIC_SRC
   #utils.cc
   timer.cc
   #ten_trans.cc
-  #qnsector.cc
-  #index.cc
-  )
+)
 
 
   add_library(gqten

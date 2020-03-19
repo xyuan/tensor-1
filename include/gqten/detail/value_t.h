@@ -28,6 +28,7 @@ using ZGQTensor = GQTensor<GQTEN_Complex>;
 
 // Intra using types
 using QNSectorDimT_ = unsigned int;
+using IndexDimT_ = long;
 } /* gqten */ 
 
 
