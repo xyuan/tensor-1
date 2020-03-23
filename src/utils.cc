@@ -21,59 +21,59 @@
 namespace gqten {
 
 
-GQTensor<GQTEN_Complex> ToComplex(const GQTensor<GQTEN_Double> &dten) {
-  GQTensor<GQTEN_Complex> zten(dten.indexes);
-  if (dten.scalar != 0.0) {
-    zten.scalar = dten.scalar;
-    return zten;
-  }
-  for (auto &pdtenblk : dten.cblocks()) {
-    auto pztenblk = new QNBlock<GQTEN_Complex>(pdtenblk->qnscts);
-    assert(pztenblk->size == pdtenblk->size);
-    ArrayToComplex(pztenblk->data(), pdtenblk->cdata(), pdtenblk->size);
-    zten.blocks().push_back(pztenblk);
-  }
-  return zten;
-}
+//GQTensor<GQTEN_Complex> ToComplex(const GQTensor<GQTEN_Double> &dten) {
+  //GQTensor<GQTEN_Complex> zten(dten.indexes);
+  //if (dten.scalar != 0.0) {
+    //zten.scalar = dten.scalar;
+    //return zten;
+  //}
+  //for (auto &pdtenblk : dten.cblocks()) {
+    //auto pztenblk = new QNBlock<GQTEN_Complex>(pdtenblk->qnscts);
+    //assert(pztenblk->size == pdtenblk->size);
+    //ArrayToComplex(pztenblk->data(), pdtenblk->cdata(), pdtenblk->size);
+    //zten.blocks().push_back(pztenblk);
+  //}
+  //return zten;
+//}
 
 
-QN CalcDiv(
-    const std::vector<QNSector> &qnscts, const std::vector<Index> &indexes) {
-  QN div;
-  auto ndim = indexes.size();
-  assert(qnscts.size() == ndim);
-  for (size_t i = 0; i < ndim; ++i) {
-    if (indexes[i].dir == IN) {
-      auto qnflow = -qnscts[i].qn;
-      if (ndim == 1) {
-        return qnflow;
-      } else {
-        if (i == 0) {
-          div = qnflow;
-        } else {
-          div += qnflow;
-        }
-      }
-    } else if (indexes[i].dir == OUT) {
-      auto qnflow = qnscts[i].qn;
-      if (ndim == 1) {
-        return qnflow;
-      } else {
-        if (i == 0) {
-          div = qnflow;
-        } else {
-          div += qnflow;
-        }
-      }
-    } 
-  }
-  return div;
-}
+//QN CalcDiv(
+    //const std::vector<QNSector> &qnscts, const std::vector<Index> &indexes) {
+  //QN div;
+  //auto ndim = indexes.size();
+  //assert(qnscts.size() == ndim);
+  //for (size_t i = 0; i < ndim; ++i) {
+    //if (indexes[i].dir == IN) {
+      //auto qnflow = -qnscts[i].qn;
+      //if (ndim == 1) {
+        //return qnflow;
+      //} else {
+        //if (i == 0) {
+          //div = qnflow;
+        //} else {
+          //div += qnflow;
+        //}
+      //}
+    //} else if (indexes[i].dir == OUT) {
+      //auto qnflow = qnscts[i].qn;
+      //if (ndim == 1) {
+        //return qnflow;
+      //} else {
+        //if (i == 0) {
+          //div = qnflow;
+        //} else {
+          //div += qnflow;
+        //}
+      //}
+    //} 
+  //}
+  //return div;
+//}
 
 
-QN CalcDiv(const QNSectorSet &blk_qnss, const std::vector<Index> &indexes) {
-  return CalcDiv(blk_qnss.qnscts, indexes);
-}
+//QN CalcDiv(const QNSectorSet &blk_qnss, const std::vector<Index> &indexes) {
+  //return CalcDiv(blk_qnss.qnscts, indexes);
+//}
 
 
 // Multiplication from vec[i] to the end.

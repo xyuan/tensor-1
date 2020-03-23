@@ -12,9 +12,9 @@ endif()
 
 set(GQTEN_HEADERS_DIR ${GQTEN_HEADER_PATH}/gqten)
 set(GQTEN_BASIC_SRC
-  #utils.cc
+  utils.cc
   timer.cc
-  #ten_trans.cc
+  ten_trans.cc
 )
 
 

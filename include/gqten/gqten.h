@@ -61,21 +61,21 @@ public:
   AbelQNVal(const long val) : val_(val) {}
   AbelQNVal(void) : AbelQNVal(0) {}
 
-  AbelQNVal *Clone(void) const { return new AbelQNVal(val_); }
+  AbelQNVal *Clone(void) const override { return new AbelQNVal(val_); }
 
-  AbelQNVal *Minus(void) const { return new AbelQNVal(-val_); }
+  AbelQNVal *Minus(void) const override { return new AbelQNVal(-val_); }
 
-  void AddAssign(const QNVal *prhs_b) {
+  void AddAssign(const QNVal *prhs_b) override {
     auto prhs_d = static_cast<const AbelQNVal *>(prhs_b);   // Do safe downcasting
     val_ += prhs_d->val_;
   }
 
   // Override for Hashable base class
-  std::size_t Hash(void) const { return hasher_(val_); }
+  std::size_t Hash(void) const override { return hasher_(val_); }
 
   // Override for Streamable base class
-  void StreamRead(std::istream &is) { is >> val_; }
-  void StreamWrite(std::ostream &os) const { os << val_ << std::endl; }
+  void StreamRead(std::istream &is) override { is >> val_; }
+  void StreamWrite(std::ostream &os) const override { os << val_ << std::endl; }
 
 private:
   long val_;
@@ -94,8 +94,8 @@ public:
   QNValSharedPtr GetValPtr(void) const { return pval_; }
 
 private:
-  QNValSharedPtr pval_;
   std::string name_;
+  QNValSharedPtr pval_;
 };
 
 using QNCardVec = std::vector<QNCard>;
@@ -125,10 +125,10 @@ public:
   bool operator==(const QN &rhs) const { return hash_ == rhs.hash_; }
   bool operator!=(const QN &rhs) const { return !(*this == rhs); }
 
-  std::size_t Hash(void) const { return hash_; }
+  std::size_t Hash(void) const override { return hash_; }
 
-  void StreamRead(std::istream &);
-  void StreamWrite(std::ostream &) const;
+  void StreamRead(std::istream &) override;
+  void StreamWrite(std::ostream &) const override;
 
 private:
   QNValPtrVec qnvals_;
@@ -161,13 +161,13 @@ public:
   bool operator==(const QNSector &rhs) const { return hash_ == rhs.hash_; }
   bool operator!=(const QNSector &rhs) const { return !(*this == rhs); }
 
-  std::size_t Hash(void) const { return hash_; }
+  std::size_t Hash(void) const override { return hash_; }
 
-  void StreamRead(std::istream &is) {
+  void StreamRead(std::istream &is) override {
     is >> qn >> dim >> hash_;
   }
 
-  void StreamWrite(std::ostream &os) const {
+  void StreamWrite(std::ostream &os) const override {
     os << qn;
     os << dim << std::endl;
     os << hash_ << std::endl;
@@ -204,7 +204,7 @@ public:
   bool operator==(const QNSectorSet &rhs) const { return Hash() == rhs.Hash(); }
   bool operator!=(const QNSectorSet &rhs) const { return !(*this == rhs); }
 
-  std::size_t Hash(void) const { return VecHasher(qnscts); }
+  std::size_t Hash(void) const override { return VecHasher(qnscts); }
 
   QNSectorVec<QNT> qnscts;
 };
@@ -225,6 +225,7 @@ struct InterOffsetQnsct {
 };
 
 
+/* TODO: name change: Index -> TenIdx */
 template <typename QNT>
 class Index : public QNSectorSet<QNT>, public Streamable {
 public:
@@ -265,6 +266,7 @@ public:
   InterOffsetQnsct<QNT> CoorInterOffsetAndQnsct(const long) const;
 
   // Inplace inverse operation
+  /* TODO: name change: Dag() -> ?? */
   void Dag(void) {
     if (dir == IN) {
       dir = OUT;
@@ -273,10 +275,12 @@ public:
     }
   }
 
-  std::size_t Hash(void) const { return QNSctSetT::Hash() ^ str_hasher_(tag); }
+  std::size_t Hash(void) const override {
+    return QNSctSetT::Hash() ^ str_hasher_(tag);
+  }
 
-  void StreamRead(std::istream &);
-  void StreamWrite(std::ostream &) const;
+  void StreamRead(std::istream &) override;
+  void StreamWrite(std::ostream &) const override;
 
   IndexDimT_ dim;
   std::string dir;
@@ -298,61 +302,62 @@ template <typename IndexT>
 IndexT InverseIndex(const IndexT &);
 
 
-//// Dense block labeled by the quantum number.
-//template <typename ElemType>
-//class QNBlock : public QNSectorSet {
-//// Binary I/O.
-//friend std::ifstream &bfread<ElemType>(std::ifstream &, QNBlock<ElemType> &);
-//friend std::ofstream &bfwrite<ElemType>(std::ofstream &, const QNBlock<ElemType> &);
-//// Some functions called by tensor numerical functions to use the private constructor.
-//friend std::vector<QNBlock<ElemType> *> BlocksCtrctBatch<ElemType>(
-    //const std::vector<long> &, const std::vector<long> &,
-    //const ElemType,
-    //const std::vector<QNBlock<ElemType> *> &,
-    //const std::vector<QNBlock<ElemType> *> &);
+// Dense block labeled by the quantum number.
+/* TODO: name change: ElemType -> ElemT */
+/* TODO: refactor: QNBlock does not manage the raw data
+ * but just point data's location. Raw data will be managed by GQTensor.
+ */
+template <typename QNT, typename ElemType>
+class QNBlock : public QNSectorSet<QNT>, public Streamable {
+public:
+  using QNSctVecT = QNSectorVec<QNT>;
+  using QNSctSetT = QNSectorSet<QNT>;
 
-//public:
-  //QNBlock(void) = default;
-  //QNBlock(const std::vector<QNSector> &);
+  QNBlock(void) = default;
+  QNBlock(const QNSctVecT &);
 
-  //QNBlock(const QNBlock &);
-  //QNBlock &operator=(const QNBlock &);
+  QNBlock(const QNBlock &);
+  QNBlock &operator=(const QNBlock &);
   
-  //QNBlock(QNBlock &&) noexcept;
-  //QNBlock &operator=(QNBlock &&) noexcept;
+  QNBlock(QNBlock &&) noexcept;
+  QNBlock &operator=(QNBlock &&) noexcept;
 
-  //~QNBlock(void) override;
-  
-  //// Element getter and setter.
-  //const ElemType &operator()(const std::vector<long> &) const;
-  //ElemType &operator()(const std::vector<long> &);
+  ~QNBlock(void) override;
 
-  //// Data access.
-  //const ElemType *cdata(void) const { return data_; }   // constant reference.
-  //ElemType * &data(void) { return data_; }              // non-constant reference.
+  // Element getter and setter.
+  const ElemType &operator()(const std::vector<long> &) const;
+  ElemType &operator()(const std::vector<long> &);
 
-  //// Hash methods.
-  //size_t PartHash(const std::vector<long> &) const;
-  //size_t QNSectorSetHash(void) const { return qnscts_hash_; }
+  // Data access.
+  const ElemType *cdata(void) const { return data_; }   // constant reference.
+  ElemType * &data(void) { return data_; }              // non-constant reference.
 
-  //// Inplace operations.
-  //void Random(void);
-  //void Transpose(const std::vector<long> &);
+  // Hash methods.
+  std::size_t PartHash(const std::vector<long> &) const;
+  /* TODO: change name: QNSectorSetHash -> QNSctSetHash */
+  std::size_t QNSectorSetHash(void) const { return qnscts_hash_; }
 
-  //// Public data members.
-  //long ndim = 0;              // Number of dimensions.
-  //std::vector<long> shape;    // Shape of the block.
-  //long size = 0;              // Total number of elements in this block.
+  // Inplace operations.
+  void Random(void);
+  void Transpose(const std::vector<long> &);
 
-//private:
-  //// NOTE: For performance reason, this constructor will NOT initialize the data_ to 0!!!
-  //// It should only be intra-used.
-  //QNBlock(const std::vector<const QNSector *> &);
+  void StreamRead(std::istream &) override;
+  void StreamWrite(std::ostream &) const override;
 
-  //ElemType *data_ = nullptr;    // Data in a 1D array.
-  //std::vector<long> data_offsets_;
-  //std::size_t qnscts_hash_ = 0;
-//};
+  // Public data members.
+  long ndim = 0;              // Number of dimensions.
+  std::vector<long> shape;    // Shape of the block.
+  long size = 0;              // Total number of elements in this block.
+
+private:
+  // NOTE: For performance reason, this constructor will NOT initialize
+  // the data_ to 0!!! So, it should only be intra-used.
+  QNBlock(const ConstQNSectorPtrVec<QNT> &);
+
+  ElemType *data_ = nullptr;    // Data in a 1D array.
+  std::vector<long> data_offsets_;
+  std::size_t qnscts_hash_ = 0;
+};
 
 
 //// Tensor with U1 symmetry.
@@ -641,7 +646,7 @@ private:
 // Include implementation details.
 #include "gqten/detail/qn_impl.h"
 #include "gqten/detail/index_impl.h"
-//#include "gqten/detail/qnblock_impl.h"
+#include "gqten/detail/qnblock_impl.h"
 //#include "gqten/detail/gqtensor_impl.h"
 //#include "gqten/detail/ten_ctrct_impl.h"
 //#include "gqten/detail/ten_lincmb_impl.h"

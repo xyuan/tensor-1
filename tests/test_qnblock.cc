@@ -18,6 +18,19 @@
 using namespace gqten;
 
 
+// Forward define
+/* TODO: Remove it */
+std::vector<std::vector<long>> GenAllCoors(const std::vector<long> &shape) {
+  std::vector<std::vector<long>> each_coors(shape.size());
+  for (size_t i = 0; i < shape.size(); ++i) {
+    for (long j = 0; j < shape[i]; ++j) {
+      each_coors[i].push_back(j);
+    }
+  }
+  return CalcCartProd(each_coors);
+}
+
+
 template <typename QNBlockT>
 void QNBlockEq(const QNBlockT &lhs, const QNBlockT &rhs) {
   EXPECT_EQ(rhs.qnscts, lhs.qnscts);
@@ -28,38 +41,41 @@ void QNBlockEq(const QNBlockT &lhs, const QNBlockT &rhs) {
 }
 
 
-using DQNBlock = QNBlock<GQTEN_Double>;
-using ZQNBlock = QNBlock<GQTEN_Complex>;
+using NormalQN1 = QN<NormalQNVal>;
+using QNSctT = QNSector<NormalQN1>;
+using QNSctSetT  = QNSectorSet<NormalQN1>;
+using DQNBlockT = QNBlock<NormalQN1, GQTEN_Double>;
+using ZQNBlockT = QNBlock<NormalQN1, GQTEN_Complex>;
 
 
 struct TestQNBlock : public testing::Test {
-  QN qn = QN({QNNameVal("qn", 0)});
-  QNSector qnsct1 = QNSector(qn, 1);
-  QNSector qnsct2 = QNSector(qn, 2);
-  QNSector qnsct3 = QNSector(qn, 3);
+  NormalQN1 qn = NormalQN1({QNCard("qn", NormalQNVal(0))});
+  QNSctT qnsct1 = QNSctT(qn, 1);
+  QNSctT qnsct2 = QNSctT(qn, 2);
+  QNSctT qnsct3 = QNSctT(qn, 3);
 
-  DQNBlock qnblock_default;
-  QNSector sz0_sct1 = QNSector(QN({QNNameVal("Sz", 0)}), 1);
-  QNSector sz1_sct2 = QNSector(QN({QNNameVal("Sz", 1)}), 2);
-  DQNBlock qnblock_sz0sct1_1d = DQNBlock({sz0_sct1});
-  DQNBlock qnblock_sz0sct1_2d = DQNBlock({sz0_sct1, sz0_sct1});
-  DQNBlock qnblock_sz1sct2_2d = DQNBlock({sz1_sct2, sz1_sct2});
+  DQNBlockT qnblock_default;
+  QNSctT sz0_sct1 = QNSctT(NormalQN1({QNCard("Sz", NormalQNVal(0))}), 1);
+  QNSctT sz1_sct2 = QNSctT(NormalQN1({QNCard("Sz", NormalQNVal(1))}), 2);
+  DQNBlockT qnblock_sz0sct1_1d = DQNBlockT({sz0_sct1});
+  DQNBlockT qnblock_sz0sct1_2d = DQNBlockT({sz0_sct1, sz0_sct1});
+  DQNBlockT qnblock_sz1sct2_2d = DQNBlockT({sz1_sct2, sz1_sct2});
 
-  DQNBlock dqnblock_default;
-  DQNBlock dqnblock_1 = DQNBlock({qnsct1});
-  DQNBlock dqnblock_3 = DQNBlock({qnsct3});
-  DQNBlock dqnblock_22 = DQNBlock({qnsct2, qnsct2});
-  DQNBlock dqnblock_23 = DQNBlock({qnsct2, qnsct3});
-  DQNBlock dqnblock_13 = DQNBlock({qnsct1, qnsct3});
-  DQNBlock dqnblock_233 = DQNBlock({qnsct2, qnsct3, qnsct3});
+  DQNBlockT DQNBlockT_default;
+  DQNBlockT DQNBlockT_1 = DQNBlockT({qnsct1});
+  DQNBlockT DQNBlockT_3 = DQNBlockT({qnsct3});
+  DQNBlockT DQNBlockT_22 = DQNBlockT({qnsct2, qnsct2});
+  DQNBlockT DQNBlockT_23 = DQNBlockT({qnsct2, qnsct3});
+  DQNBlockT DQNBlockT_13 = DQNBlockT({qnsct1, qnsct3});
+  DQNBlockT DQNBlockT_233 = DQNBlockT({qnsct2, qnsct3, qnsct3});
 
-  ZQNBlock zqnblock_default;
-  ZQNBlock zqnblock_1 = ZQNBlock({qnsct1});
-  ZQNBlock zqnblock_3 = ZQNBlock({qnsct3});
-  ZQNBlock zqnblock_22 = ZQNBlock({qnsct2, qnsct2});
-  ZQNBlock zqnblock_23 = ZQNBlock({qnsct2, qnsct3});
-  ZQNBlock zqnblock_13 = ZQNBlock({qnsct1, qnsct3});
-  ZQNBlock zqnblock_233 = ZQNBlock({qnsct2, qnsct3, qnsct3});
+  ZQNBlockT ZQNBlockT_default;
+  ZQNBlockT ZQNBlockT_1 = ZQNBlockT({qnsct1});
+  ZQNBlockT ZQNBlockT_3 = ZQNBlockT({qnsct3});
+  ZQNBlockT ZQNBlockT_22 = ZQNBlockT({qnsct2, qnsct2});
+  ZQNBlockT ZQNBlockT_23 = ZQNBlockT({qnsct2, qnsct3});
+  ZQNBlockT ZQNBlockT_13 = ZQNBlockT({qnsct1, qnsct3});
+  ZQNBlockT ZQNBlockT_233 = ZQNBlockT({qnsct2, qnsct3, qnsct3});
 };
 
 
@@ -71,21 +87,21 @@ void RunTestQNBlockNdimCase(
 
 
 TEST_F(TestQNBlock, TestNdim) {
-  RunTestQNBlockNdimCase(dqnblock_default, 0);
-  RunTestQNBlockNdimCase(dqnblock_1, 1);
-  RunTestQNBlockNdimCase(dqnblock_3, 1);
-  RunTestQNBlockNdimCase(dqnblock_22, 2);
-  RunTestQNBlockNdimCase(dqnblock_23, 2);
-  RunTestQNBlockNdimCase(dqnblock_13, 2);
-  RunTestQNBlockNdimCase(dqnblock_233, 3);
+  RunTestQNBlockNdimCase(DQNBlockT_default, 0);
+  RunTestQNBlockNdimCase(DQNBlockT_1, 1);
+  RunTestQNBlockNdimCase(DQNBlockT_3, 1);
+  RunTestQNBlockNdimCase(DQNBlockT_22, 2);
+  RunTestQNBlockNdimCase(DQNBlockT_23, 2);
+  RunTestQNBlockNdimCase(DQNBlockT_13, 2);
+  RunTestQNBlockNdimCase(DQNBlockT_233, 3);
 
-  RunTestQNBlockNdimCase(zqnblock_default, 0);
-  RunTestQNBlockNdimCase(zqnblock_1, 1);
-  RunTestQNBlockNdimCase(zqnblock_3, 1);
-  RunTestQNBlockNdimCase(zqnblock_22, 2);
-  RunTestQNBlockNdimCase(zqnblock_23, 2);
-  RunTestQNBlockNdimCase(zqnblock_13, 2);
-  RunTestQNBlockNdimCase(zqnblock_233, 3);
+  RunTestQNBlockNdimCase(ZQNBlockT_default, 0);
+  RunTestQNBlockNdimCase(ZQNBlockT_1, 1);
+  RunTestQNBlockNdimCase(ZQNBlockT_3, 1);
+  RunTestQNBlockNdimCase(ZQNBlockT_22, 2);
+  RunTestQNBlockNdimCase(ZQNBlockT_23, 2);
+  RunTestQNBlockNdimCase(ZQNBlockT_13, 2);
+  RunTestQNBlockNdimCase(ZQNBlockT_233, 3);
 }
 
 
@@ -97,27 +113,27 @@ void RunTestQNBlockShapeCase(
 
 
 TEST_F(TestQNBlock, TestShape) {
-  RunTestQNBlockShapeCase(dqnblock_default, {});
-  RunTestQNBlockShapeCase(dqnblock_1, {1});
-  RunTestQNBlockShapeCase(dqnblock_3, {3});
-  RunTestQNBlockShapeCase(dqnblock_22, {2, 2});
-  RunTestQNBlockShapeCase(dqnblock_23, {2, 3});
-  RunTestQNBlockShapeCase(dqnblock_13, {1, 3});
-  RunTestQNBlockShapeCase(dqnblock_233, {2, 3 ,3});
+  RunTestQNBlockShapeCase(DQNBlockT_default, {});
+  RunTestQNBlockShapeCase(DQNBlockT_1, {1});
+  RunTestQNBlockShapeCase(DQNBlockT_3, {3});
+  RunTestQNBlockShapeCase(DQNBlockT_22, {2, 2});
+  RunTestQNBlockShapeCase(DQNBlockT_23, {2, 3});
+  RunTestQNBlockShapeCase(DQNBlockT_13, {1, 3});
+  RunTestQNBlockShapeCase(DQNBlockT_233, {2, 3 ,3});
 
-  RunTestQNBlockShapeCase(zqnblock_default, {});
-  RunTestQNBlockShapeCase(zqnblock_1, {1});
-  RunTestQNBlockShapeCase(zqnblock_3, {3});
-  RunTestQNBlockShapeCase(zqnblock_22, {2, 2});
-  RunTestQNBlockShapeCase(zqnblock_23, {2, 3});
-  RunTestQNBlockShapeCase(zqnblock_13, {1, 3});
-  RunTestQNBlockShapeCase(zqnblock_233, {2, 3 ,3});
+  RunTestQNBlockShapeCase(ZQNBlockT_default, {});
+  RunTestQNBlockShapeCase(ZQNBlockT_1, {1});
+  RunTestQNBlockShapeCase(ZQNBlockT_3, {3});
+  RunTestQNBlockShapeCase(ZQNBlockT_22, {2, 2});
+  RunTestQNBlockShapeCase(ZQNBlockT_23, {2, 3});
+  RunTestQNBlockShapeCase(ZQNBlockT_13, {1, 3});
+  RunTestQNBlockShapeCase(ZQNBlockT_233, {2, 3 ,3});
 }
 
 
-template <typename ElemType>
+template <typename QNT, typename ElemType>
 void RunTestQNBlockElemAssignmentCase(
-    const QNBlock<ElemType> &qnblk_init,
+    const QNBlock<QNT, ElemType> &qnblk_init,
     const std::vector<ElemType> elems,
     const std::vector<std::vector<long>> coors) {
   auto qnblk = qnblk_init;
@@ -137,130 +153,138 @@ void RunTestQNBlockElemAssignmentCase(
 
 
 TEST_F(TestQNBlock, TestElemAssignment) {
-  RunTestQNBlockElemAssignmentCase(dqnblock_1, {1.0}, {{0}});
-  RunTestQNBlockElemAssignmentCase(dqnblock_3, {1.0}, {{0}});
-  RunTestQNBlockElemAssignmentCase(dqnblock_3, {1.0, 2.0}, {{0}, {1}});
-  RunTestQNBlockElemAssignmentCase(dqnblock_3, {1.0, 2.0}, {{1}, {2}});
-  RunTestQNBlockElemAssignmentCase(dqnblock_13, {1.0}, {{0, 1}});
-  RunTestQNBlockElemAssignmentCase(dqnblock_22, {1.0}, {{1, 0}});
-  RunTestQNBlockElemAssignmentCase(dqnblock_233, {1.0}, {{0, 1, 2}});
+  RunTestQNBlockElemAssignmentCase(DQNBlockT_1, {1.0}, {{0}});
+  RunTestQNBlockElemAssignmentCase(DQNBlockT_3, {1.0}, {{0}});
+  RunTestQNBlockElemAssignmentCase(DQNBlockT_3, {1.0, 2.0}, {{0}, {1}});
+  RunTestQNBlockElemAssignmentCase(DQNBlockT_3, {1.0, 2.0}, {{1}, {2}});
+  RunTestQNBlockElemAssignmentCase(DQNBlockT_13, {1.0}, {{0, 1}});
+  RunTestQNBlockElemAssignmentCase(DQNBlockT_22, {1.0}, {{1, 0}});
+  RunTestQNBlockElemAssignmentCase(DQNBlockT_233, {1.0}, {{0, 1, 2}});
   RunTestQNBlockElemAssignmentCase(
-      dqnblock_233,
+      DQNBlockT_233,
       {1.0, 2.0}, {{1, 0, 2}, {0, 2, 1}});
 
-  RunTestQNBlockElemAssignmentCase(zqnblock_1, {GQTEN_Complex(0.0)}, {{0}});
-  RunTestQNBlockElemAssignmentCase(zqnblock_1, {GQTEN_Complex(1.0)}, {{0}});
+  RunTestQNBlockElemAssignmentCase(ZQNBlockT_1, {GQTEN_Complex(0.0)}, {{0}});
+  RunTestQNBlockElemAssignmentCase(ZQNBlockT_1, {GQTEN_Complex(1.0)}, {{0}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_1,
+      ZQNBlockT_1,
       {GQTEN_Complex(1.0, 0.0)}, {{0}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_1,
+      ZQNBlockT_1,
       {GQTEN_Complex(0.0, 1.0)}, {{0}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_1,
+      ZQNBlockT_1,
       {GQTEN_Complex(1.0, 1.0)}, {{0}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_3,
+      ZQNBlockT_3,
       {GQTEN_Complex(1.0, 1.0)}, {{0}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_3,
+      ZQNBlockT_3,
       {GQTEN_Complex(1.0, 1.0)}, {{1}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_3,
+      ZQNBlockT_3,
       {GQTEN_Complex(1.0, 1.0)}, {{2}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_3,
+      ZQNBlockT_3,
       {GQTEN_Complex(1.0, 0.1), GQTEN_Complex(2.0, 0.2)}, {{0}, {1}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_13,
+      ZQNBlockT_13,
       {GQTEN_Complex(1.0, 1.0)}, {{0, 0}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_13,
+      ZQNBlockT_13,
       {GQTEN_Complex(1.0, 1.0)}, {{0, 1}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_13,
+      ZQNBlockT_13,
       {GQTEN_Complex(1.0, 1.0)}, {{0, 2}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_13,
+      ZQNBlockT_13,
       {GQTEN_Complex(1.0, 0.1), GQTEN_Complex(2.0, 0.2)}, {{0, 0}, {0, 1}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_22,
+      ZQNBlockT_22,
       {GQTEN_Complex(1.0, 0.1)}, {{1, 0}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_22, {GQTEN_Complex(1.0, 0.1)}, {{1, 0}});
+      ZQNBlockT_22, {GQTEN_Complex(1.0, 0.1)}, {{1, 0}});
   RunTestQNBlockElemAssignmentCase(
-      zqnblock_233, {GQTEN_Complex(1.0, 0.1)}, {{0, 1, 2}});
+      ZQNBlockT_233, {GQTEN_Complex(1.0, 0.1)}, {{0, 1, 2}});
 }
 
 
 TEST_F(TestQNBlock, TestPartialHash) {
   EXPECT_EQ(
       qnblock_sz0sct1_1d.PartHash({0}),
-      QNSectorSet({qnblock_sz0sct1_1d.qnscts[0]}).Hash());
+      QNSctSetT({qnblock_sz0sct1_1d.qnscts[0]}).Hash()
+  );
   EXPECT_EQ(
       qnblock_sz0sct1_2d.PartHash({0, 1}),
-      QNSectorSet({qnblock_sz0sct1_2d.qnscts[0],
-                   qnblock_sz0sct1_2d.qnscts[1]}).Hash());
+      QNSctSetT(
+          {qnblock_sz0sct1_2d.qnscts[0], qnblock_sz0sct1_2d.qnscts[1]}
+      ).Hash()
+  );
 }
 
 
-TEST_F(TestQNBlock, TestQNSectorSetHash) {
+TEST_F(TestQNBlock, TestQNSctTSetHash) {
   EXPECT_EQ(qnblock_default.QNSectorSetHash(), 0);
   EXPECT_EQ(
       qnblock_sz0sct1_1d.QNSectorSetHash(),
-      QNSectorSet(qnblock_sz0sct1_1d.qnscts).Hash());
+      QNSctSetT(qnblock_sz0sct1_1d.qnscts).Hash()
+  );
   EXPECT_EQ(
       qnblock_sz1sct2_2d.QNSectorSetHash(),
-      QNSectorSet(qnblock_sz1sct2_2d.qnscts).Hash());
+      QNSctSetT(qnblock_sz1sct2_2d.qnscts).Hash()
+  );
 }
 
 
 template <typename QNBlockT>
 void RunTestQNBlockHashMethodsCase(
     const QNBlockT &qnblk,
-    const std::vector<long> &part_axes) {
-  EXPECT_EQ(qnblk.QNSectorSetHash(), QNSectorSet(qnblk.qnscts).Hash());
+    const std::vector<long> &part_axes
+) {
+  EXPECT_EQ(qnblk.QNSectorSetHash(), QNSctSetT(qnblk.qnscts).Hash());
 
-  std::vector<QNSector> part_qnscts;
+  std::vector<QNSctT> part_qnscts;
   for (auto axis : part_axes) {
     part_qnscts.push_back(qnblk.qnscts[axis]);
   }
-  EXPECT_EQ(qnblk.PartHash(part_axes), QNSectorSet(part_qnscts).Hash());
+  EXPECT_EQ(qnblk.PartHash(part_axes), QNSctSetT(part_qnscts).Hash());
 }
 
 
 TEST_F(TestQNBlock, TestHashMethods) {
-  /* TODO: Why it fail? */
-  //RunTestQNBlockHashMethodsCase(dqnblock_default, {});
-  RunTestQNBlockHashMethodsCase(dqnblock_3, {0});
-  RunTestQNBlockHashMethodsCase(dqnblock_23, {0});
-  RunTestQNBlockHashMethodsCase(dqnblock_23, {1});
-  RunTestQNBlockHashMethodsCase(dqnblock_23, {0, 1});
-  RunTestQNBlockHashMethodsCase(dqnblock_233, {0});
-  RunTestQNBlockHashMethodsCase(dqnblock_233, {1});
-  RunTestQNBlockHashMethodsCase(dqnblock_233, {2});
-  RunTestQNBlockHashMethodsCase(dqnblock_233, {0, 1});
-  RunTestQNBlockHashMethodsCase(dqnblock_233, {1, 2});
-  RunTestQNBlockHashMethodsCase(dqnblock_233, {0, 2});
-  RunTestQNBlockHashMethodsCase(dqnblock_233, {0, 1, 2});
+  /* Why it fail? Because VecHasher({}) !=0
+   * TODO: Let VecHasher({}) == 0
+   */
+  //RunTestQNBlockHashMethodsCase(DQNBlockT_default, {});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_3, {0});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_23, {0});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_23, {1});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_23, {0, 1});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_233, {0});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_233, {1});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_233, {2});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_233, {0, 1});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_233, {1, 2});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_233, {0, 2});
+  RunTestQNBlockHashMethodsCase(DQNBlockT_233, {0, 1, 2});
 
-  RunTestQNBlockHashMethodsCase(zqnblock_3, {0});
-  RunTestQNBlockHashMethodsCase(zqnblock_23, {0});
-  RunTestQNBlockHashMethodsCase(zqnblock_23, {1});
-  RunTestQNBlockHashMethodsCase(zqnblock_23, {0, 1});
-  RunTestQNBlockHashMethodsCase(zqnblock_233, {0});
-  RunTestQNBlockHashMethodsCase(zqnblock_233, {1});
-  RunTestQNBlockHashMethodsCase(zqnblock_233, {2});
-  RunTestQNBlockHashMethodsCase(zqnblock_233, {0, 1});
-  RunTestQNBlockHashMethodsCase(zqnblock_233, {1, 2});
-  RunTestQNBlockHashMethodsCase(zqnblock_233, {0, 2});
-  RunTestQNBlockHashMethodsCase(zqnblock_233, {0, 1, 2});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_3, {0});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_23, {0});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_23, {1});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_23, {0, 1});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_233, {0});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_233, {1});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_233, {2});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_233, {0, 1});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_233, {1, 2});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_233, {0, 2});
+  RunTestQNBlockHashMethodsCase(ZQNBlockT_233, {0, 1, 2});
 }
 
 
 // Test rand a QNBlock.
-template <typename ElemType>
-void RunTestRandQNBlockCase(QNBlock<ElemType> &qnblk) {
+template <typename QNT, typename ElemType>
+void RunTestRanDQNBlockTCase(QNBlock<QNT, ElemType> &qnblk) {
   auto size = qnblk.size;
   auto rand_array = new ElemType[size]();
   srand(0);
@@ -274,29 +298,29 @@ void RunTestRandQNBlockCase(QNBlock<ElemType> &qnblk) {
 }
 
 
-TEST_F(TestQNBlock, TestRandQNBlock) {
-  RunTestRandQNBlockCase(dqnblock_default);
-  RunTestRandQNBlockCase(dqnblock_1);
-  RunTestRandQNBlockCase(dqnblock_3);
-  RunTestRandQNBlockCase(dqnblock_13);
-  RunTestRandQNBlockCase(dqnblock_22);
-  RunTestRandQNBlockCase(dqnblock_23);
-  RunTestRandQNBlockCase(dqnblock_233);
+TEST_F(TestQNBlock, TestRanDQNBlockT) {
+  RunTestRanDQNBlockTCase(DQNBlockT_default);
+  RunTestRanDQNBlockTCase(DQNBlockT_1);
+  RunTestRanDQNBlockTCase(DQNBlockT_3);
+  RunTestRanDQNBlockTCase(DQNBlockT_13);
+  RunTestRanDQNBlockTCase(DQNBlockT_22);
+  RunTestRanDQNBlockTCase(DQNBlockT_23);
+  RunTestRanDQNBlockTCase(DQNBlockT_233);
 
-  RunTestRandQNBlockCase(zqnblock_default);
-  RunTestRandQNBlockCase(zqnblock_1);
-  RunTestRandQNBlockCase(zqnblock_3);
-  RunTestRandQNBlockCase(zqnblock_13);
-  RunTestRandQNBlockCase(zqnblock_22);
-  RunTestRandQNBlockCase(zqnblock_23);
-  RunTestRandQNBlockCase(zqnblock_233);
+  RunTestRanDQNBlockTCase(ZQNBlockT_default);
+  RunTestRanDQNBlockTCase(ZQNBlockT_1);
+  RunTestRanDQNBlockTCase(ZQNBlockT_3);
+  RunTestRanDQNBlockTCase(ZQNBlockT_13);
+  RunTestRanDQNBlockTCase(ZQNBlockT_22);
+  RunTestRanDQNBlockTCase(ZQNBlockT_23);
+  RunTestRanDQNBlockTCase(ZQNBlockT_233);
 }
 
 
 // Test QNBlock transpose.
-template <typename ElemType>
+template <typename QNBlkT>
 void RunTestQNBlockTransposeCase(
-    const QNBlock<ElemType> &blk_init, const std::vector<long> &axes) {
+    const QNBlkT &blk_init, const std::vector<long> &axes) {
   auto blk = blk_init;
   blk.Random();
   auto transed_blk = blk;
@@ -311,31 +335,31 @@ void RunTestQNBlockTransposeCase(
 
 
 TEST_F(TestQNBlock, TestQNBlockTranspose) {
-  RunTestQNBlockTransposeCase(dqnblock_1, {0});
-  RunTestQNBlockTransposeCase(dqnblock_3, {0});
-  RunTestQNBlockTransposeCase(dqnblock_13, {0, 1});
-  RunTestQNBlockTransposeCase(dqnblock_13, {1, 0});
-  RunTestQNBlockTransposeCase(dqnblock_22, {0, 1});
-  RunTestQNBlockTransposeCase(dqnblock_22, {1, 0});
-  RunTestQNBlockTransposeCase(dqnblock_23, {0, 1});
-  RunTestQNBlockTransposeCase(dqnblock_23, {1, 0});
-  RunTestQNBlockTransposeCase(dqnblock_233, {0, 1, 2});
-  RunTestQNBlockTransposeCase(dqnblock_233, {1, 0, 2});
-  RunTestQNBlockTransposeCase(dqnblock_233, {0, 2, 1});
-  RunTestQNBlockTransposeCase(dqnblock_233, {2, 0, 1});
+  RunTestQNBlockTransposeCase(DQNBlockT_1, {0});
+  RunTestQNBlockTransposeCase(DQNBlockT_3, {0});
+  RunTestQNBlockTransposeCase(DQNBlockT_13, {0, 1});
+  RunTestQNBlockTransposeCase(DQNBlockT_13, {1, 0});
+  RunTestQNBlockTransposeCase(DQNBlockT_22, {0, 1});
+  RunTestQNBlockTransposeCase(DQNBlockT_22, {1, 0});
+  RunTestQNBlockTransposeCase(DQNBlockT_23, {0, 1});
+  RunTestQNBlockTransposeCase(DQNBlockT_23, {1, 0});
+  RunTestQNBlockTransposeCase(DQNBlockT_233, {0, 1, 2});
+  RunTestQNBlockTransposeCase(DQNBlockT_233, {1, 0, 2});
+  RunTestQNBlockTransposeCase(DQNBlockT_233, {0, 2, 1});
+  RunTestQNBlockTransposeCase(DQNBlockT_233, {2, 0, 1});
 
-  RunTestQNBlockTransposeCase(zqnblock_1, {0});
-  RunTestQNBlockTransposeCase(zqnblock_3, {0});
-  RunTestQNBlockTransposeCase(zqnblock_13, {0, 1});
-  RunTestQNBlockTransposeCase(zqnblock_13, {1, 0});
-  RunTestQNBlockTransposeCase(zqnblock_22, {0, 1});
-  RunTestQNBlockTransposeCase(zqnblock_22, {1, 0});
-  RunTestQNBlockTransposeCase(zqnblock_23, {0, 1});
-  RunTestQNBlockTransposeCase(zqnblock_23, {1, 0});
-  RunTestQNBlockTransposeCase(zqnblock_233, {0, 1, 2});
-  RunTestQNBlockTransposeCase(zqnblock_233, {1, 0, 2});
-  RunTestQNBlockTransposeCase(zqnblock_233, {0, 2, 1});
-  RunTestQNBlockTransposeCase(zqnblock_233, {2, 0, 1});
+  RunTestQNBlockTransposeCase(ZQNBlockT_1, {0});
+  RunTestQNBlockTransposeCase(ZQNBlockT_3, {0});
+  RunTestQNBlockTransposeCase(ZQNBlockT_13, {0, 1});
+  RunTestQNBlockTransposeCase(ZQNBlockT_13, {1, 0});
+  RunTestQNBlockTransposeCase(ZQNBlockT_22, {0, 1});
+  RunTestQNBlockTransposeCase(ZQNBlockT_22, {1, 0});
+  RunTestQNBlockTransposeCase(ZQNBlockT_23, {0, 1});
+  RunTestQNBlockTransposeCase(ZQNBlockT_23, {1, 0});
+  RunTestQNBlockTransposeCase(ZQNBlockT_233, {0, 1, 2});
+  RunTestQNBlockTransposeCase(ZQNBlockT_233, {1, 0, 2});
+  RunTestQNBlockTransposeCase(ZQNBlockT_233, {0, 2, 1});
+  RunTestQNBlockTransposeCase(ZQNBlockT_233, {2, 0, 1});
 }
 
 
@@ -360,21 +384,21 @@ void RunTestQNBlockCopyAndMoveConstructorsCase(QNBlockT &qnblk) {
 
 
 TEST_F(TestQNBlock, TestCopyAndMoveConstructors) {
-  RunTestQNBlockCopyAndMoveConstructorsCase(dqnblock_default);
-  RunTestQNBlockCopyAndMoveConstructorsCase(dqnblock_1);
-  RunTestQNBlockCopyAndMoveConstructorsCase(dqnblock_3);
-  RunTestQNBlockCopyAndMoveConstructorsCase(dqnblock_13);
-  RunTestQNBlockCopyAndMoveConstructorsCase(dqnblock_22);
-  RunTestQNBlockCopyAndMoveConstructorsCase(dqnblock_23);
-  RunTestQNBlockCopyAndMoveConstructorsCase(dqnblock_233);
+  RunTestQNBlockCopyAndMoveConstructorsCase(DQNBlockT_default);
+  RunTestQNBlockCopyAndMoveConstructorsCase(DQNBlockT_1);
+  RunTestQNBlockCopyAndMoveConstructorsCase(DQNBlockT_3);
+  RunTestQNBlockCopyAndMoveConstructorsCase(DQNBlockT_13);
+  RunTestQNBlockCopyAndMoveConstructorsCase(DQNBlockT_22);
+  RunTestQNBlockCopyAndMoveConstructorsCase(DQNBlockT_23);
+  RunTestQNBlockCopyAndMoveConstructorsCase(DQNBlockT_233);
 
-  RunTestQNBlockCopyAndMoveConstructorsCase(zqnblock_default);
-  RunTestQNBlockCopyAndMoveConstructorsCase(zqnblock_1);
-  RunTestQNBlockCopyAndMoveConstructorsCase(zqnblock_3);
-  RunTestQNBlockCopyAndMoveConstructorsCase(zqnblock_13);
-  RunTestQNBlockCopyAndMoveConstructorsCase(zqnblock_22);
-  RunTestQNBlockCopyAndMoveConstructorsCase(zqnblock_23);
-  RunTestQNBlockCopyAndMoveConstructorsCase(zqnblock_233);
+  RunTestQNBlockCopyAndMoveConstructorsCase(ZQNBlockT_default);
+  RunTestQNBlockCopyAndMoveConstructorsCase(ZQNBlockT_1);
+  RunTestQNBlockCopyAndMoveConstructorsCase(ZQNBlockT_3);
+  RunTestQNBlockCopyAndMoveConstructorsCase(ZQNBlockT_13);
+  RunTestQNBlockCopyAndMoveConstructorsCase(ZQNBlockT_22);
+  RunTestQNBlockCopyAndMoveConstructorsCase(ZQNBlockT_23);
+  RunTestQNBlockCopyAndMoveConstructorsCase(ZQNBlockT_233);
 }
 
 
@@ -384,11 +408,11 @@ void RunTestQNBlockFileIOCase(QNBlockT &qnblk) {
 
   std::string file = "test.qnblk";
   std::ofstream out(file, std::ofstream::binary);
-  bfwrite(out, qnblk);
+  out << qnblk;
   out.close();
   std::ifstream in(file, std::ifstream::binary);
   QNBlockT qnblk_cpy;
-  bfread(in, qnblk_cpy);
+  in >> qnblk_cpy;
   in.close();
 
   EXPECT_EQ(qnblk_cpy.ndim, qnblk.ndim);
@@ -400,19 +424,19 @@ void RunTestQNBlockFileIOCase(QNBlockT &qnblk) {
 
 
 TEST_F(TestQNBlock, FileIO) {
-  RunTestQNBlockFileIOCase(dqnblock_default);
-  RunTestQNBlockFileIOCase(dqnblock_1);
-  RunTestQNBlockFileIOCase(dqnblock_3);
-  RunTestQNBlockFileIOCase(dqnblock_13);
-  RunTestQNBlockFileIOCase(dqnblock_22);
-  RunTestQNBlockFileIOCase(dqnblock_23);
-  RunTestQNBlockFileIOCase(dqnblock_233);
+  RunTestQNBlockFileIOCase(DQNBlockT_default);
+  RunTestQNBlockFileIOCase(DQNBlockT_1);
+  RunTestQNBlockFileIOCase(DQNBlockT_3);
+  RunTestQNBlockFileIOCase(DQNBlockT_13);
+  RunTestQNBlockFileIOCase(DQNBlockT_22);
+  RunTestQNBlockFileIOCase(DQNBlockT_23);
+  RunTestQNBlockFileIOCase(DQNBlockT_233);
 
-  RunTestQNBlockFileIOCase(zqnblock_default);
-  RunTestQNBlockFileIOCase(zqnblock_1);
-  RunTestQNBlockFileIOCase(zqnblock_3);
-  RunTestQNBlockFileIOCase(zqnblock_13);
-  RunTestQNBlockFileIOCase(zqnblock_22);
-  RunTestQNBlockFileIOCase(zqnblock_23);
-  RunTestQNBlockFileIOCase(zqnblock_233);
+  RunTestQNBlockFileIOCase(ZQNBlockT_default);
+  RunTestQNBlockFileIOCase(ZQNBlockT_1);
+  RunTestQNBlockFileIOCase(ZQNBlockT_3);
+  RunTestQNBlockFileIOCase(ZQNBlockT_13);
+  RunTestQNBlockFileIOCase(ZQNBlockT_22);
+  RunTestQNBlockFileIOCase(ZQNBlockT_23);
+  RunTestQNBlockFileIOCase(ZQNBlockT_233);
 }

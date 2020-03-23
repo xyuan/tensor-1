@@ -18,9 +18,9 @@
 namespace gqten {
 
 
-QN CalcDiv(const QNSectorSet &, const std::vector<Index> &);
+//QN CalcDiv(const QNSectorSet &, const std::vector<Index> &);
 
-QN CalcDiv(const std::vector<QNSector> &, const std::vector<Index> &);
+//QN CalcDiv(const std::vector<QNSector> &, const std::vector<Index> &);
 
 std::vector<long> CalcMultiDimDataOffsets(const std::vector<long> &);
 
