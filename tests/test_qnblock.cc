@@ -5,14 +5,14 @@
 * 
 * Description: GraceQ/tensor project. Unittests for QNBlock object.
 */
-#include <utility>
-#include <algorithm>
-#include <cstdio>
-
 #include "gtest/gtest.h"
 #include "gqten/gqten.h"
 #include "gqten/detail/utils_inl.h"
 #include "testing_utils.h"
+
+#include <utility>
+#include <algorithm>
+#include <cstdio>
 
 
 using namespace gqten;
