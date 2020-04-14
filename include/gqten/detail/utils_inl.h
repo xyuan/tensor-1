@@ -40,6 +40,18 @@ T CalcCartProd(T v) {
 }
 
 
+inline
+std::vector<std::vector<long>> GenAllCoors(const std::vector<long> &shape) {
+  std::vector<std::vector<long>> each_coors(shape.size());
+  for (size_t i = 0; i < shape.size(); ++i) {
+    for (long j = 0; j < shape[i]; ++j) {
+      each_coors[i].push_back(j);
+    }
+  }
+  return CalcCartProd(each_coors);
+}
+
+
 // Calculate offset for the effective one dimension array.
 inline long CalcEffOneDimArrayOffset(
     const std::vector<long> &coors,
@@ -98,6 +110,14 @@ inline bool ArrayEq(
     }
   }
   return true;
+}
+
+
+inline void ArrayToComplex(
+    std::complex<double> *pz_array, const double *pd_array, const size_t size) {
+  for (size_t i = 0; i < size; ++i) {
+    pz_array[i] = pd_array[i];
+  }
 }
 
 
@@ -226,9 +246,56 @@ inline void GenDiagMat(
 
 
 // Free the resources of a GQTensor.
-template <typename TenElemType>
-inline void GQTenFree(GQTensor<TenElemType> *pt) {
+template <typename QNT, typename TenElemType>
+inline void GQTenFree(GQTensor<QNT, TenElemType> *pt) {
   for (auto &pblk : pt->blocks()) { delete pblk; }
+}
+
+
+// Calculate divergence from a vector of QNSector and a vector of Index.
+template <typename QNT>
+QNT CalcDiv(
+    const std::vector<QNSector<QNT>> &qnscts,
+    const std::vector<Index<QNT>> &indexes
+) {
+  QNT div;
+  auto ndim = indexes.size();
+  assert(qnscts.size() == ndim);
+  for (size_t i = 0; i < ndim; ++i) {
+    if (indexes[i].dir == IN) {
+      auto qnflow = -qnscts[i].qn;
+      if (ndim == 1) {
+        return qnflow;
+      } else {
+        if (i == 0) {
+          div = qnflow;
+        } else {
+          div += qnflow;
+        }
+      }
+    } else if (indexes[i].dir == OUT) {
+      auto qnflow = qnscts[i].qn;
+      if (ndim == 1) {
+        return qnflow;
+      } else {
+        if (i == 0) {
+          div = qnflow;
+        } else {
+          div += qnflow;
+        }
+      }
+    } 
+  }
+  return div;
+}
+
+
+template <typename QNT>
+QNT CalcDiv(
+    const QNSectorSet<QNT> &blk_qnss,
+    const std::vector<Index<QNT>> &indexes
+) {
+  return CalcDiv(blk_qnss.qnscts, indexes);
 }
 } /* gqten */
 #endif /* ifndef GQTEN_DETAIL_UTILS_INL_H */

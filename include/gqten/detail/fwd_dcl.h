@@ -30,6 +30,11 @@ class QNSectorSet;
 template <typename>
 class Index;
 
+// Directions of the index
+#define NDIR "NDIR"
+#define IN "IN"
+#define OUT "OUT"
+
 
 template <typename, typename>
 class QNBlock;
@@ -48,12 +53,13 @@ class QNBlock;
     //const std::vector<QNBlock<TenElemType> *> &);
 
 
-template <typename> class GQTensor;
+template <typename, typename>
+class GQTensor;
 
-template <typename ElemType>
-std::ifstream &bfread(std::ifstream &, GQTensor<ElemType> &);
+//template <typename ElemType>
+//std::ifstream &bfread(std::ifstream &, GQTensor<ElemType> &);
 
-template <typename ElemType>
-std::ofstream &bfwrite(std::ofstream &, const GQTensor<ElemType> &);
+//template <typename ElemType>
+//std::ofstream &bfwrite(std::ofstream &, const GQTensor<ElemType> &);
 } /* gqten */ 
 #endif /* ifndef GQTEN_DETAIL_FWD_DCL_H */

@@ -5,6 +5,9 @@
 * 
 * Description: GraceQ/tensor project. Implementation details for U1 symmetric block sparse tensor class template.
 */
+#include "gqten/gqten.h"
+#include "gqten/detail/utils_inl.h"   // GenAllCoors, ArrayToComplex
+
 #include <assert.h>
 
 #include <vector>
@@ -14,8 +17,6 @@
 #include <type_traits>    // is_same
 #include <cmath>
 
-#include "gqten/gqten.h"
-#include "gqten/detail/utils_inl.h"
 
 #ifdef Release
   #define NDEBUG
@@ -25,14 +26,8 @@
 namespace gqten {
 
 
-// Forward declarations.
-QN CalcDiv(const QNSectorSet &, const std::vector<Index> &);
-
-std::vector<std::vector<long>> GenAllCoors(const std::vector<long> &);
-
-
-template <typename ElemType>
-GQTensor<ElemType>::GQTensor(const std::vector<Index> &idxes) : indexes(idxes) {
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType>::GQTensor(const IdxVecT &idxes) : indexes(idxes) {
   for (auto &index : indexes) {
     auto size = 0;
     for (auto &qnsct : index.qnscts) { size += qnsct.dim; }
@@ -41,25 +36,26 @@ GQTensor<ElemType>::GQTensor(const std::vector<Index> &idxes) : indexes(idxes) {
 }
 
 
-template <typename ElemType>
-GQTensor<ElemType>::GQTensor(const GQTensor<ElemType> &gqtensor) :
-    indexes(gqtensor.indexes),
-    scalar(gqtensor.scalar),
-    shape(gqtensor.shape) {
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType>::GQTensor(
+    const GQTensor<QNT, ElemType> &gqtensor
+) : indexes(gqtensor.indexes), scalar(gqtensor.scalar), shape(gqtensor.shape) {
   for (auto &pblk : gqtensor.blocks_) {
-    auto pnew_blk = new QNBlock<ElemType>(*pblk);
+    auto pnew_blk = new QNBlock<QNT, ElemType>(*pblk);
     blocks_.push_back(pnew_blk);
   }
 }
 
 
-template <typename ElemType>
-GQTensor<ElemType> &GQTensor<ElemType>::operator=(const GQTensor &rhs) {
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType> &GQTensor<QNT, ElemType>::operator=(
+    const GQTensor &rhs
+) {
   for (auto pblk : blocks_) { delete pblk; }    // Delete old blocks.
   auto new_blk_num = rhs.blocks_.size();
-  std::vector<QNBlock<ElemType> *> new_blks(new_blk_num);
+  std::vector<QNBlock<QNT, ElemType> *> new_blks(new_blk_num);
   for (size_t i = 0; i < new_blk_num; ++i) {
-    auto pnew_blk = new QNBlock<ElemType>(*rhs.blocks_[i]);
+    auto pnew_blk = new QNBlock<QNT, ElemType>(*rhs.blocks_[i]);
     new_blks[i] = pnew_blk;
   }
   blocks_ = new_blks;
@@ -70,16 +66,21 @@ GQTensor<ElemType> &GQTensor<ElemType>::operator=(const GQTensor &rhs) {
 }
 
 
-template <typename ElemType>
-GQTensor<ElemType>::GQTensor(GQTensor &&gqtensor) noexcept :
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType>::GQTensor(
+    GQTensor &&gqtensor
+) noexcept :
     indexes(gqtensor.indexes),
     scalar(gqtensor.scalar),
     shape(gqtensor.shape),
-    blocks_(std::move(gqtensor.blocks_)) {}
+    blocks_(std::move(gqtensor.blocks_)) {
+}
 
 
-template <typename ElemType>
-GQTensor<ElemType> &GQTensor<ElemType>::operator=(GQTensor &&rhs) noexcept {
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType> &GQTensor<QNT, ElemType>::operator=(
+    GQTensor &&rhs
+) noexcept {
   for (auto pblk : blocks_) { delete pblk; }
   blocks_ = std::move(rhs.blocks_);
   scalar = rhs.scalar;
@@ -89,14 +90,14 @@ GQTensor<ElemType> &GQTensor<ElemType>::operator=(GQTensor &&rhs) noexcept {
 }
 
 
-template <typename ElemType>
-GQTensor<ElemType>::~GQTensor(void) {
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType>::~GQTensor(void) {
   for (auto &pblk : blocks_) { delete pblk; }
 }
 
 
-template <typename ElemType>
-ElemType GQTensor<ElemType>::Elem(const std::vector<long> &coors) const {
+template <typename QNT, typename ElemType>
+ElemType GQTensor<QNT, ElemType>::Elem(const std::vector<long> &coors) const {
   auto blk_inter_offsets_and_blk_qnss = CalcTargetBlkInterOffsetsAndQNSS(coors);
   for (auto &pblk : blocks_) {
     if (pblk->qnscts == blk_inter_offsets_and_blk_qnss.blk_qnss) {
@@ -107,26 +108,28 @@ ElemType GQTensor<ElemType>::Elem(const std::vector<long> &coors) const {
 }
 
 
-template <typename ElemType>
-ElemType &GQTensor<ElemType>::operator()(const std::vector<long> &coors) {
+template <typename QNT, typename ElemType>
+ElemType &GQTensor<QNT, ElemType>::operator()(const std::vector<long> &coors) {
   auto blk_inter_offsets_and_blk_qnss = CalcTargetBlkInterOffsetsAndQNSS(coors);
   for (auto &pblk : blocks_) {
     if (pblk->qnscts == blk_inter_offsets_and_blk_qnss.blk_qnss) {
       return (*pblk)(blk_inter_offsets_and_blk_qnss.blk_inter_offsets);
     }
   }
-  QNBlock<ElemType> *pnew_block = new QNBlock<ElemType>(
-                               blk_inter_offsets_and_blk_qnss.blk_qnss.qnscts);
+  QNBlock<QNT, ElemType> *pnew_block =
+      new QNBlock<QNT, ElemType>(
+          blk_inter_offsets_and_blk_qnss.blk_qnss.qnscts
+      );
   blocks_.push_back(pnew_block);
   return (*blocks_.back())(blk_inter_offsets_and_blk_qnss.blk_inter_offsets);
 }
 
 
-template <typename ElemType>
-void GQTensor<ElemType>::Transpose(const std::vector<long> &transed_axes) {
+template <typename QNT, typename ElemType>
+void GQTensor<QNT, ElemType>::Transpose(const std::vector<long> &transed_axes) {
   assert(transed_axes.size() == indexes.size());
   // Transpose indexes and shape.
-  std::vector<Index> transed_indexes(indexes.size());
+  std::vector<Index<QNT>> transed_indexes(indexes.size());
   std::vector<long> transed_shape(shape.size());
   for (size_t i = 0; i < transed_axes.size(); ++i) {
     transed_indexes[i] = indexes[transed_axes[i]];
@@ -141,13 +144,13 @@ void GQTensor<ElemType>::Transpose(const std::vector<long> &transed_axes) {
 }
 
 
-template <typename ElemType>
-void GQTensor<ElemType>::Random(const QN &div) {
+template <typename QNT, typename ElemType>
+void GQTensor<QNT, ElemType>::Random(const QNT &div) {
   for (auto &pblk : blocks_) { delete pblk; }
-  blocks_ = std::vector<QNBlock<ElemType> *>();
+  blocks_ = std::vector<QNBlock<QNT, ElemType> *>();
   for (auto &blk_qnss : BlkQNSSsIter()) {
     if (CalcDiv(blk_qnss.qnscts, indexes) == div) {
-      QNBlock<ElemType> *block = new QNBlock<ElemType>(blk_qnss.qnscts);
+      QNBlock<QNT, ElemType> *block = new QNBlock<QNT, ElemType>(blk_qnss.qnscts);
       block->Random();
       blocks_.push_back(block);
     }
@@ -155,8 +158,8 @@ void GQTensor<ElemType>::Random(const QN &div) {
 }
 
 
-template <typename ElemType>
-GQTEN_Double GQTensor<ElemType>::Normalize(void) {
+template <typename QNT, typename ElemType>
+GQTEN_Double GQTensor<QNT, ElemType>::Normalize(void) {
   auto norm = Norm();
   for (auto &pblk : blocks_) {
     auto data = pblk->data();
@@ -168,8 +171,8 @@ GQTEN_Double GQTensor<ElemType>::Normalize(void) {
 }
 
 
-template <typename ElemType>
-void GQTensor<ElemType>::Dag(void) {
+template <typename QNT, typename ElemType>
+void GQTensor<QNT, ElemType>::Dag(void) {
   for (auto &index : indexes) { index.Dag(); }
   if (std::is_same<ElemType, GQTEN_Complex>::value) {
     for (auto &pblk : blocks_) {
@@ -183,15 +186,17 @@ void GQTensor<ElemType>::Dag(void) {
 
 
 // Operators Overload.
-template <typename ElemType>
-GQTensor<ElemType> GQTensor<ElemType>::operator+(const GQTensor &rhs) {
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType> GQTensor<QNT, ElemType>::operator+(
+    const GQTensor &rhs
+) {
   auto added_t = GQTensor(indexes);
   for (auto &prhs_blk : rhs.cblocks()) {
     auto  has_blk = false;
     for (auto &lhs_blk : blocks_) {
       if (lhs_blk->QNSectorSetHash() == prhs_blk->QNSectorSetHash()) {
         assert(lhs_blk->size == prhs_blk->size);
-        auto added_blk = new QNBlock<ElemType>(lhs_blk->qnscts);
+        auto added_blk = new QNBlock<QNT, ElemType>(lhs_blk->qnscts);
         auto added_data = added_blk->data();
         auto lhs_blk_data = lhs_blk->cdata();
         auto rhs_blk_data = prhs_blk->cdata();
@@ -204,7 +209,7 @@ GQTensor<ElemType> GQTensor<ElemType>::operator+(const GQTensor &rhs) {
       }
     }
     if (!has_blk) {
-      auto added_blk = new QNBlock<ElemType>(*prhs_blk);
+      auto added_blk = new QNBlock<QNT, ElemType>(*prhs_blk);
       added_t.blocks().push_back(added_blk);
     }
   }
@@ -217,7 +222,7 @@ GQTensor<ElemType> GQTensor<ElemType>::operator+(const GQTensor &rhs) {
       }
     }
     if (!has_blk) {
-      auto added_blk = new QNBlock<ElemType>(*plhs_blk);
+      auto added_blk = new QNBlock<QNT, ElemType>(*plhs_blk);
       added_t.blocks().push_back(added_blk);
     }
   }
@@ -228,8 +233,10 @@ GQTensor<ElemType> GQTensor<ElemType>::operator+(const GQTensor &rhs) {
 }
 
 
-template <typename ElemType>
-GQTensor<ElemType> &GQTensor<ElemType>::operator+=(const GQTensor &rhs) {
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType> &GQTensor<QNT, ElemType>::operator+=(
+    const GQTensor &rhs
+) {
   if (this->indexes.size() == 0) {
     assert(this->indexes == rhs.indexes);
     this->scalar += rhs.scalar;
@@ -251,7 +258,7 @@ GQTensor<ElemType> &GQTensor<ElemType>::operator+=(const GQTensor &rhs) {
       }
     }
     if (!has_blk) {
-      auto pnew_blk = new QNBlock<ElemType>(*prhs_blk);
+      auto pnew_blk = new QNBlock<QNT, ElemType>(*prhs_blk);
       blocks_.push_back(pnew_blk);
     }
   }
@@ -259,8 +266,8 @@ GQTensor<ElemType> &GQTensor<ElemType>::operator+=(const GQTensor &rhs) {
 }
 
 
-template <typename ElemType>
-GQTensor<ElemType> GQTensor<ElemType>::operator-(void) const {
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType> GQTensor<QNT, ElemType>::operator-(void) const {
   auto minus_t = GQTensor(*this);
   for (auto &pblk : minus_t.blocks()) {
     auto data = pblk->data();
@@ -272,8 +279,8 @@ GQTensor<ElemType> GQTensor<ElemType>::operator-(void) const {
 }
 
 
-template <typename ElemType>
-bool GQTensor<ElemType>::operator==(const GQTensor &rhs) const {
+template <typename QNT, typename ElemType>
+bool GQTensor<QNT, ElemType>::operator==(const GQTensor &rhs) const {
   // Indexes check.
   if (indexes != rhs.indexes) {
     return false;
@@ -311,40 +318,44 @@ bool GQTensor<ElemType>::operator==(const GQTensor &rhs) const {
 
 // Iterators.
 // Generate all coordinates. Cost so much. Be careful to use.
-template <typename ElemType>
-std::vector<std::vector<long>> GQTensor<ElemType>::CoorsIter(void) const {
+template <typename QNT, typename ElemType>
+std::vector<std::vector<long>> GQTensor<QNT, ElemType>::CoorsIter(void) const {
   return GenAllCoors(shape);
 }
 
 
 // Private members.
-template <typename ElemType>
-BlkInterOffsetsAndQNSS GQTensor<ElemType>::CalcTargetBlkInterOffsetsAndQNSS(
-    const std::vector<long> &coors) const {
+template <typename QNT, typename ElemType>
+BlkInterOffsetsAndQNSS<QNT>
+GQTensor<QNT, ElemType>::CalcTargetBlkInterOffsetsAndQNSS(
+    const std::vector<long> &coors
+) const {
   std::vector<long> blk_inter_offsets(coors.size());
-  std::vector<QNSector> blk_qnss(coors.size());
+  QNSectorVec<QNT> blk_qnss(coors.size());
   for (size_t i = 0; i < coors.size(); ++i) {
     auto inter_offset_and_qnsct = indexes[i].CoorInterOffsetAndQnsct(coors[i]);
     blk_inter_offsets[i] = coors[i] - inter_offset_and_qnsct.inter_offset;
     blk_qnss[i] = inter_offset_and_qnsct.qnsct;
   }
-  return BlkInterOffsetsAndQNSS(blk_inter_offsets, blk_qnss);
+  return BlkInterOffsetsAndQNSS<QNT>(blk_inter_offsets, blk_qnss);
 }
 
 
-template <typename ElemType>
-std::vector<QNSectorSet> GQTensor<ElemType>::BlkQNSSsIter(void) const {
-  std::vector<std::vector<QNSector>> v;
+template <typename QNT, typename ElemType>
+std::vector<QNSectorSet<QNT>> GQTensor<QNT, ElemType>::BlkQNSSsIter(
+    void
+) const {
+  std::vector<QNSectorVec<QNT>> v;
   for (auto &index : indexes) { v.push_back(index.qnscts); }
   auto s = CalcCartProd(v);
-  std::vector<QNSectorSet> blk_qnss_set;
-  for (auto &qnscts : s) { blk_qnss_set.push_back(QNSectorSet(qnscts)); }
+  std::vector<QNSectorSet<QNT>> blk_qnss_set;
+  for (auto &qnscts : s) { blk_qnss_set.push_back(QNSectorSet<QNT>(qnscts)); }
   return blk_qnss_set;
 }
 
 
-template <typename ElemType>
-GQTEN_Double GQTensor<ElemType>::Norm(void) {
+template <typename QNT, typename ElemType>
+GQTEN_Double GQTensor<QNT, ElemType>::Norm(void) {
   GQTEN_Double norm2 = 0.0;
   for (auto &pblk : blocks_) {
     for (long i = 0; i < pblk->size; ++i) {
@@ -356,37 +367,40 @@ GQTEN_Double GQTensor<ElemType>::Norm(void) {
 
 
 // Tensor operations.
-template <typename ElemType>
-GQTensor<ElemType> Dag(const GQTensor<ElemType> &t) {
-  GQTensor<ElemType> dag_t(t);
+template <typename GQTensorT>
+GQTensorT Dag(const GQTensorT &t) {
+  GQTensorT dag_t(t);
   dag_t.Dag();
   return std::move(dag_t);
 }
 
 
-template <typename ElemType>
-QN Div(const GQTensor<ElemType> &t) {
+template <typename QNT, typename ElemType>
+QNT Div(const GQTensor<QNT, ElemType> &t) {
   auto blks = t.cblocks();
   auto blk_num = blks.size();
   if (blk_num == 0) {
     std::cout << "Tensor does not have a block. Retrun QN()." << std::endl;
-    return QN();
+    return QNT();
   }
-  QN div = CalcDiv(blks[0]->qnscts, t.indexes);
+  QNT div = CalcDiv(blks[0]->qnscts, t.indexes);
   for (size_t i = 1; i < blk_num; ++i) {
     auto blki_div = CalcDiv(blks[i]->qnscts, t.indexes);
     if (blki_div != div) {
-      std::cout << "Tensor does not have a special divergence. Return QN()." << std::endl;
-      return QN();
+      std::cout << "Tensor does not have a special divergence. Return QN()."
+                << std::endl;
+      return QNT();
     }
   }
   return div;
 }
 
 
-template <typename ElemType>
-GQTensor<ElemType> operator*(const GQTensor<ElemType> &t, const ElemType &s) {
-  auto muled_t = GQTensor<ElemType>(t);
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType> operator*(
+    const GQTensor<QNT, ElemType> &t, const ElemType &s
+) {
+  auto muled_t = GQTensor<QNT, ElemType>(t);
   // For scalar case.
   if (muled_t.indexes.size() == 0) {
     muled_t.scalar *= s;
@@ -403,45 +417,63 @@ GQTensor<ElemType> operator*(const GQTensor<ElemType> &t, const ElemType &s) {
 }
 
 
-template <typename ElemType>
-GQTensor<ElemType> operator*(const ElemType &s, const GQTensor<ElemType> &t) {
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType> operator*(
+    const ElemType &s, const GQTensor<QNT, ElemType> &t
+) {
   return std::move(t * s);
 }
 
 
-template <typename ElemType>
-std::ifstream &bfread(std::ifstream &ifs, GQTensor<ElemType> &t) {
-  long ndim;
-  ifs >> ndim;
-  t.indexes = std::vector<Index>(ndim);
-  for (auto &idx : t.indexes) { bfread(ifs, idx); }
-  t.shape = std::vector<long>(ndim);
-  for (auto &order : t.shape) { ifs >> order; }
-  ifs >> t.scalar;
-
-  long blk_num;
-  ifs >> blk_num;
-  for (auto &pblk : t.blocks_) { delete pblk; }
-  t.blocks_ = std::vector<QNBlock<ElemType> *>(blk_num);
-  for (auto &pblk : t.blocks_) {
-    pblk = new QNBlock<ElemType>();
-    bfread(ifs, *pblk);
+template <typename QNT>
+CplxGQTensor<QNT> ToComplex(const RealGQTensor<QNT> &dten) {
+  CplxGQTensor<QNT> zten(dten.indexes);
+  if (dten.scalar != 0.0) {
+    zten.scalar = dten.scalar;
+    return zten;
   }
-  return ifs;
+  for (auto &pdtenblk : dten.cblocks()) {
+    auto pztenblk = new QNBlock<QNT, GQTEN_Complex>(pdtenblk->qnscts);
+    assert(pztenblk->size == pdtenblk->size);
+    ArrayToComplex(pztenblk->data(), pdtenblk->cdata(), pdtenblk->size);
+    zten.blocks().push_back(pztenblk);
+  }
+  return zten;
 }
 
 
-template <typename ElemType>
-std::ofstream &bfwrite(std::ofstream &ofs, const GQTensor<ElemType> &t) {
-  long ndim = t.indexes.size();
-  ofs << ndim << std::endl;
-  for (auto &idx : t.indexes) { bfwrite(ofs, idx); }
-  for (auto &order : t.shape) { ofs << order << std::endl; }
-  ofs << t.scalar << std::endl;
 
-  long blk_num = t.blocks_.size();
-  ofs << blk_num << std::endl;
-  for (auto &pblk : t.blocks_) { bfwrite(ofs, *pblk); }
-  return ofs;
+template <typename QNT, typename ElemType>
+void GQTensor<QNT, ElemType>::StreamRead(std::istream &is) {
+  long ndim;
+  is >> ndim;
+  indexes = std::vector<Index<QNT>>(ndim);
+  for (auto &idx : indexes) { is >> idx; }
+  shape = std::vector<long>(ndim);
+  for (auto &order : shape) { is >> order; }
+  is >> scalar;
+
+  long blk_num;
+  is >> blk_num;
+  for (auto &pblk : blocks_) { delete pblk; }
+  blocks_ = std::vector<QNBlock<QNT, ElemType> *>(blk_num);
+  for (auto &pblk : blocks_) {
+    pblk = new QNBlock<QNT, ElemType>();
+    is >> (*pblk);
+  }
+}
+
+
+template <typename QNT, typename ElemType>
+void GQTensor<QNT, ElemType>::StreamWrite(std::ostream &os) const {
+  long ndim = indexes.size();
+  os << ndim << std::endl;
+  for (auto &idx : indexes) { os << idx; }
+  for (auto &order : shape) { os << order << std::endl; }
+  os << scalar << std::endl;
+
+  long blk_num = blocks_.size();
+  os << blk_num << std::endl;
+  for (auto &pblk : blocks_) { os << (*pblk); }
 }
 } /* gqten */ 

@@ -23,7 +23,7 @@
 #include <iostream>   // istream, ostream
 #include <memory>     // shared_ptr
 
-//#include "gqten/detail/fwd_dcl.h"
+#include "gqten/detail/fwd_dcl.h"
 #include "gqten/detail/consts.h"
 #include "gqten/detail/value_t.h"
 #include "gqten/detail/framework.h"
@@ -210,12 +210,19 @@ public:
 };
 
 
+template <typename QNT>
+bool operator==(const QNSectorVec<QNT> &lhs, const QNSectorSet<QNT> &rhs) {
+  return VecHasher(lhs) == rhs.Hash();
+}
+
+
+template <typename QNT>
+bool operator!=(const QNSectorVec<QNT> &lhs, const QNSectorSet<QNT> &rhs) {
+  return !(lhs == rhs);
+}
+
+
 // Index.
-#define NDIR "NDIR"
-#define IN "IN"
-#define OUT "OUT"
-
-
 template <typename QNT>
 struct InterOffsetQnsct {
   InterOffsetQnsct(const IndexDimT_ &inter_offset, const QNSector<QNT> &qnsct) :
@@ -360,111 +367,122 @@ private:
 };
 
 
-//// Tensor with U1 symmetry.
-//struct BlkInterOffsetsAndQNSS {     // QNSS: QNSectorSet.
-  //BlkInterOffsetsAndQNSS(
-      //const std::vector<long> &blk_inter_offsets, const QNSectorSet &blk_qnss) :
-      //blk_inter_offsets(blk_inter_offsets), blk_qnss(blk_qnss) {}
+// GQTensor
+template <typename QNT>
+struct BlkInterOffsetsAndQNSS {     // QNSS: QNSectorSet.
+  BlkInterOffsetsAndQNSS(
+      const std::vector<long> &blk_inter_offsets,
+      const QNSectorSet<QNT> &blk_qnss
+  ) : blk_inter_offsets(blk_inter_offsets), blk_qnss(blk_qnss) {}
 
-  //std::vector<long> blk_inter_offsets;
-  //QNSectorSet blk_qnss;
-//};
-
-
-//template <typename ElemType>
-//class GQTensor {
-//friend std::ifstream &bfread<ElemType>(std::ifstream &, GQTensor<ElemType> &);
-//friend std::ofstream &bfwrite<ElemType>(std::ofstream &, const GQTensor<ElemType> &);
-
-//public:
-  //GQTensor(void) = default;
-  //GQTensor(const std::vector<Index> &);
-
-  //GQTensor(const GQTensor &);
-  //GQTensor &operator=(const GQTensor &);
-
-  //GQTensor(GQTensor &&) noexcept;
-  //GQTensor &operator=(GQTensor &&) noexcept;
-
-  //~GQTensor(void);
-
-  //// Element getter and setter.
-  //ElemType Elem(const std::vector<long> &) const;     // Getter.
-  //ElemType &operator()(const std::vector<long> &);    // Setter.
-
-  //// Access to the blocks.
-  //const std::vector<QNBlock<ElemType> *> &cblocks(void) const {
-    //return blocks_;
-  //}
-  //std::vector<QNBlock<ElemType> *> &blocks(void) { return blocks_; }
-
-  //// Inplace operations.
-
-  //// Random set tensor elements with given quantum number divergence.
-  //// Any original blocks will be destroyed.
-  //void Random(const QN &);
-
-  //// Tensor transpose.
-  //void Transpose(const std::vector<long> &);
-
-  //// Normalize the GQTensor and return its norm.
-  //GQTEN_Double Normalize(void);
-
-  //// Switch the direction of the indexes, complex conjugate of the element.
-  //void Dag(void);
-
-  //// Operators overload.
-  //GQTensor operator-(void) const;
-  //GQTensor operator+(const GQTensor &);
-  //GQTensor &operator+=(const GQTensor &);
-
-  //bool operator==(const GQTensor &) const;
-  //bool operator!=(const GQTensor &rhs) const { return !(*this == rhs); }
-
-  //// Iterators.
-  //// Return all the tensor coordinates. So heavy that you should not use it!
-  //std::vector<std::vector<long>> CoorsIter(void) const;
-
-  //// Public data members.
-  //std::vector<Index> indexes;
-  //ElemType scalar = 0.0;
-  //std::vector<long> shape;
-
-//private:
-  //std::vector<QNBlock<ElemType> *> blocks_;
-
-  //double Norm(void);
-
-  //BlkInterOffsetsAndQNSS CalcTargetBlkInterOffsetsAndQNSS(
-      //const std::vector<long> &) const;
-  //std::vector<QNSectorSet> BlkQNSSsIter(void) const;
-//};
+  std::vector<long> blk_inter_offsets;
+  QNSectorSet<QNT> blk_qnss;
+};
 
 
-//// GQTensor objects operations.
-//// For Index.
-//Index InverseIndex(const Index &);
+/* TODO: name change: ElemType -> ElemT */
+template <typename QNT, typename ElemType>
+class GQTensor : public Streamable {
+public:
+  using IdxVecT = std::vector<Index<QNT>>;
 
-//// For GQTensor.
-//template <typename ElemType>
-//GQTensor<ElemType> Dag(const GQTensor<ElemType> &);
+  GQTensor(void) = default;
+  GQTensor(const std::vector<Index<QNT>> &);
 
-//// Just mock the dag. Not construct a new object.
-//template <typename ElemType>
-//inline const GQTensor<ElemType> &MockDag(const GQTensor<ElemType> &t) {
-  //return t;
-//}
+  GQTensor(const GQTensor &);
+  GQTensor &operator=(const GQTensor &);
 
-//template <typename ElemType>
-//QN Div(const GQTensor<ElemType> &);
+  GQTensor(GQTensor &&) noexcept;
+  GQTensor &operator=(GQTensor &&) noexcept;
 
-//template <typename ElemType>
-//GQTensor<ElemType> operator*(const GQTensor<ElemType> &, const ElemType &);
+  ~GQTensor(void);
 
-//template <typename ElemType>
-//GQTensor<ElemType> operator*(const ElemType &, const GQTensor<ElemType> &);
+  // Element getter and setter.
+  ElemType Elem(const std::vector<long> &) const;     // Getter.
+  ElemType &operator()(const std::vector<long> &);    // Setter.
 
-//GQTensor<GQTEN_Complex> ToComplex(const GQTensor<GQTEN_Double> &);
+  // Access to the blocks.
+  const std::vector<QNBlock<QNT, ElemType> *> &cblocks(void) const {
+    return blocks_;
+  }
+  std::vector<QNBlock<QNT, ElemType> *> &blocks(void) { return blocks_; }
+
+  // Inplace operations.
+
+  // Random set tensor elements with given quantum number divergence.
+  // Any original blocks will be destroyed.
+  void Random(const QNT &);
+
+  // Tensor transpose.
+  void Transpose(const std::vector<long> &);
+
+  // Normalize the GQTensor and return its norm.
+  GQTEN_Double Normalize(void);
+
+  // Switch the direction of the indexes, complex conjugate of the element.
+  void Dag(void);
+
+  // Operators overload.
+  GQTensor operator-(void) const;
+  GQTensor operator+(const GQTensor &);
+  GQTensor &operator+=(const GQTensor &);
+
+  bool operator==(const GQTensor &) const;
+  bool operator!=(const GQTensor &rhs) const { return !(*this == rhs); }
+
+  // Iterators.
+  // Return all the tensor coordinates. So heavy that you should not use it!
+  std::vector<std::vector<long>> CoorsIter(void) const;
+
+  void StreamRead(std::istream &) override;
+  void StreamWrite(std::ostream &) const override;
+
+  // Public data members.
+  IdxVecT indexes;
+  ElemType scalar = 0.0;
+  std::vector<long> shape;
+
+private:
+  std::vector<QNBlock<QNT, ElemType> *> blocks_;
+
+  double Norm(void);
+
+  BlkInterOffsetsAndQNSS<QNT> CalcTargetBlkInterOffsetsAndQNSS(
+      const std::vector<long> &) const;
+  std::vector<QNSectorSet<QNT>> BlkQNSSsIter(void) const;
+
+};
+
+// Tensor type with real/complex number element
+template <typename QNT>
+using RealGQTensor = GQTensor<QNT, GQTEN_Double>;
+
+template <typename QNT>
+using CplxGQTensor = GQTensor<QNT, GQTEN_Complex>;
+
+// Some tensor operations
+template <typename GQTensorT>
+GQTensorT Dag(const GQTensorT &);
+
+// Just mock the dag. Not construct a new object.
+template <typename GQTensorT>
+inline const GQTensorT &MockDag(const GQTensorT &t) { return t; }
+
+template <typename QNT, typename ElemType>
+QNT Div(const GQTensor<QNT, ElemType> &);
+
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType> operator*(
+    const GQTensor<QNT, ElemType> &, const ElemType &
+);
+
+template <typename QNT, typename ElemType>
+GQTensor<QNT, ElemType> operator*(
+    const ElemType &, const GQTensor<QNT, ElemType> &
+);
+
+template <typename QNT>
+CplxGQTensor<QNT> ToComplex(const RealGQTensor<QNT> &);
 
 
 //// Tensor numerical functions.
@@ -647,7 +665,7 @@ private:
 #include "gqten/detail/qn_impl.h"
 #include "gqten/detail/index_impl.h"
 #include "gqten/detail/qnblock_impl.h"
-//#include "gqten/detail/gqtensor_impl.h"
+#include "gqten/detail/gqtensor_impl.h"
 //#include "gqten/detail/ten_ctrct_impl.h"
 //#include "gqten/detail/ten_lincmb_impl.h"
 //#include "gqten/detail/ten_svd_impl.h"

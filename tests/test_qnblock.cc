@@ -7,7 +7,7 @@
 */
 #include "gtest/gtest.h"
 #include "gqten/gqten.h"
-#include "gqten/detail/utils_inl.h"
+#include "gqten/detail/utils_inl.h"   // GenAllCoors
 #include "testing_utils.h"
 
 #include <utility>
@@ -16,19 +16,6 @@
 
 
 using namespace gqten;
-
-
-// Forward define
-/* TODO: Remove it */
-std::vector<std::vector<long>> GenAllCoors(const std::vector<long> &shape) {
-  std::vector<std::vector<long>> each_coors(shape.size());
-  for (size_t i = 0; i < shape.size(); ++i) {
-    for (long j = 0; j < shape[i]; ++j) {
-      each_coors[i].push_back(j);
-    }
-  }
-  return CalcCartProd(each_coors);
-}
 
 
 template <typename QNBlockT>

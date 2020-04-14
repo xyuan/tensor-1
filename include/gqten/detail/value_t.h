@@ -22,10 +22,6 @@ using GQTEN_Double = double;
 using GQTEN_Complex = std::complex<GQTEN_Double>;
 
 
-using DGQTensor = GQTensor<GQTEN_Double>;
-using ZGQTensor = GQTensor<GQTEN_Complex>;
-
-
 // Intra using types
 using QNSectorDimT_ = unsigned int;
 using IndexDimT_ = long;
