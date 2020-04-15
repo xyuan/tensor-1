@@ -315,7 +315,23 @@ IndexT InverseIndex(const IndexT &);
  * but just point data's location. Raw data will be managed by GQTensor.
  */
 template <typename QNT, typename ElemType>
+std::vector<QNBlock<QNT, ElemType> *> BlocksCtrctBatch(
+    const std::vector<long> &, const std::vector<long> &,
+    const ElemType,
+    const std::vector<QNBlock<QNT, ElemType> *> &,
+    const std::vector<QNBlock<QNT, ElemType> *> &
+);
+
+template <typename QNT, typename ElemType>
 class QNBlock : public QNSectorSet<QNT>, public Streamable {
+// Some functions called by tensor numerical functions to use the private constructor.
+friend std::vector<QNBlock<QNT, ElemType> *> BlocksCtrctBatch<QNT, ElemType>(
+    const std::vector<long> &, const std::vector<long> &,
+    const ElemType,
+    const std::vector<QNBlock<QNT, ElemType> *> &,
+    const std::vector<QNBlock<QNT, ElemType> *> &
+);
+
 public:
   using QNSctVecT = QNSectorVec<QNT>;
   using QNSctSetT = QNSectorSet<QNT>;
@@ -485,49 +501,53 @@ template <typename QNT>
 CplxGQTensor<QNT> ToComplex(const RealGQTensor<QNT> &);
 
 
-//// Tensor numerical functions.
-//// Tensors contraction.
-//template <typename TenElemType>
-//void Contract(
-    //const GQTensor<TenElemType> *, const GQTensor<TenElemType> *,
-    //const std::vector<std::vector<long>> &,
-    //GQTensor<TenElemType> *);
+// Tensor numerical functions.
+// Tensors contraction.
+template <typename QNT, typename TenElemType>
+void Contract(
+    const GQTensor<QNT, TenElemType> *, const GQTensor<QNT, TenElemType> *,
+    const std::vector<std::vector<long>> &,
+    GQTensor<QNT, TenElemType> *);
 
-//// This API just for forward compatibility, it will be deleted soon.
-//// TODO: Remove these API.
-//inline DGQTensor *Contract(
-    //const DGQTensor &ta, const DGQTensor &tb,
-    //const std::vector<std::vector<long>> &axes_set) {
-  //auto res_t = new DGQTensor();
-  //Contract(&ta, &tb, axes_set, res_t);
-  //return res_t;
-//}
+// These APIs just for forward compatibility, it will be deleted soon.
+// TODO: Remove these API.
+template <typename QNT>
+inline RealGQTensor<QNT> *Contract(
+    const RealGQTensor<QNT> &ta, const RealGQTensor<QNT> &tb,
+    const std::vector<std::vector<long>> &axes_set) {
+  auto res_t = new RealGQTensor<QNT>();
+  Contract(&ta, &tb, axes_set, res_t);
+  return res_t;
+}
 
-//inline ZGQTensor *Contract(
-    //const ZGQTensor &ta, const ZGQTensor &tb,
-    //const std::vector<std::vector<long>> &axes_set) {
-  //auto res_t = new ZGQTensor();
-  //Contract(&ta, &tb, axes_set, res_t);
-  //return res_t;
-//}
+template <typename QNT>
+inline CplxGQTensor<QNT> *Contract(
+    const CplxGQTensor<QNT> &ta, const CplxGQTensor<QNT> &tb,
+    const std::vector<std::vector<long>> &axes_set) {
+  auto res_t = new CplxGQTensor<QNT>();
+  Contract(&ta, &tb, axes_set, res_t);
+  return res_t;
+}
 
-//inline ZGQTensor *Contract(
-    //const DGQTensor &ta, const ZGQTensor &tb,
-    //const std::vector<std::vector<long>> &axes_set) {
-  //auto res_t = new ZGQTensor();
-  //auto zta = ToComplex(ta);
-  //Contract(&zta, &tb, axes_set, res_t);
-  //return res_t;
-//}
+template <typename QNT>
+inline CplxGQTensor<QNT> *Contract(
+    const RealGQTensor<QNT> &ta, const CplxGQTensor<QNT> &tb,
+    const std::vector<std::vector<long>> &axes_set) {
+  auto res_t = new CplxGQTensor<QNT>();
+  auto zta = ToComplex(ta);
+  Contract(&zta, &tb, axes_set, res_t);
+  return res_t;
+}
 
-//inline ZGQTensor *Contract(
-    //const ZGQTensor &ta, const DGQTensor &tb,
-    //const std::vector<std::vector<long>> &axes_set) {
-  //auto res_t = new ZGQTensor();
-  //auto ztb = ToComplex(tb);
-  //Contract(&ta, &ztb, axes_set, res_t);
-  //return res_t;
-//}
+template <typename QNT>
+inline CplxGQTensor<QNT> *Contract(
+    const CplxGQTensor<QNT> &ta, const RealGQTensor<QNT> &tb,
+    const std::vector<std::vector<long>> &axes_set) {
+  auto res_t = new CplxGQTensor<QNT>();
+  auto ztb = ToComplex(tb);
+  Contract(&ta, &ztb, axes_set, res_t);
+  return res_t;
+}
 
 
 //// Tensors linear combination.
@@ -666,7 +686,7 @@ private:
 #include "gqten/detail/index_impl.h"
 #include "gqten/detail/qnblock_impl.h"
 #include "gqten/detail/gqtensor_impl.h"
-//#include "gqten/detail/ten_ctrct_impl.h"
+#include "gqten/detail/ten_ctrct_impl.h"
 //#include "gqten/detail/ten_lincmb_impl.h"
 //#include "gqten/detail/ten_svd_impl.h"
 

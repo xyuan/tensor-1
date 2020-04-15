@@ -17,36 +17,50 @@
 namespace gqten {
 
 
-template <typename TenElemType>
+template <typename QNT, typename TenElemType>
 void InitCtrctedTen(
-    const GQTensor<TenElemType> *, const GQTensor<TenElemType> *,
+    const GQTensor<QNT, TenElemType> *, const GQTensor<QNT, TenElemType> *,
     const std::vector<long> &, const std::vector<long> &,
-    GQTensor<TenElemType> *);
+    GQTensor<QNT, TenElemType> *
+);
 
-template <typename TenElemType>
+template <typename QNT, typename TenElemType>
 void WrapCtrctBlocks(
-    std::vector<QNBlock<TenElemType> *> &,
-    GQTensor<TenElemType> *);
+    std::vector<QNBlock<QNT, TenElemType> *> &,
+    GQTensor<QNT, TenElemType> *
+);
 
 
-template <typename TenElemType>
-std::vector<QNBlock<TenElemType> *> MergeCtrctBlks(
-    const std::vector<QNBlock<TenElemType> *> &);
+template <typename QNT, typename TenElemType>
+std::vector<QNBlock<QNT, TenElemType> *> MergeCtrctBlks(
+    const std::vector<QNBlock<QNT, TenElemType> *> &
+);
 
-template <typename TenElemType>
-std::vector<const QNSector *> GetPNewBlkQNScts(
-    const QNBlock<TenElemType> *, const QNBlock<TenElemType> *,
-    const std::vector<long> &, const std::vector<long> &);
+template <typename QNT, typename TenElemType>
+std::vector<const QNSector<QNT> *> GetPNewBlkQNScts(
+    const QNBlock<QNT, TenElemType> *, const QNBlock<QNT, TenElemType> *,
+    const std::vector<long> &, const std::vector<long> &
+);
 
 template <typename TenElemType>
 bool CtrctTransChecker(
     const std::vector<long> &,
     const long,
     const char,
-    std::vector<long> &);
+    std::vector<long> &
+);
 
-template <typename TenElemType>
+template <typename QNT, typename TenElemType>
 std::vector<std::size_t> GenBlksPartHashTable(
-    const std::vector<QNBlock<TenElemType> *> &, const std::vector<long> &);
+    const std::vector<QNBlock<QNT, TenElemType> *> &, const std::vector<long> &
+);
+
+template <typename QNT, typename TenElemType>
+std::vector<QNBlock<QNT, TenElemType> *> BlocksCtrctBatch(
+    const std::vector<long> &, const std::vector<long> &,
+    const TenElemType,
+    const std::vector<QNBlock<QNT, TenElemType> *> &,
+    const std::vector<QNBlock<QNT, TenElemType> *> &
+);
 } /* gqten */ 
 #endif /* ifndef GQTEN_DETAIL_TEN_CTRCT_FWD_H */

@@ -25,17 +25,19 @@
 namespace gqten {
 
 
-template <typename TenElemType>
+template <typename QNT, typename TenElemType>
 void Contract(
-    const GQTensor<TenElemType> *pta, const GQTensor<TenElemType> *ptb,
+    const GQTensor<QNT, TenElemType> *pta,
+    const GQTensor<QNT, TenElemType> *ptb,
     const std::vector<std::vector<long>> &axes_set,
-    GQTensor<TenElemType> *ptc) {
+    GQTensor<QNT, TenElemType> *ptc
+) {
   assert(ptc != nullptr);
   auto ctrct_axes_a = axes_set[0];
   auto ctrct_axes_b = axes_set[1];
 
   // Blocks contraction batch.
-  std::vector<QNBlock<TenElemType> *> pnew_blks;
+  std::vector<QNBlock<QNT, TenElemType> *> pnew_blks;
   if (pta->cblocks().size() > 0 && ptb->cblocks().size() > 0) {
 
 #ifdef GQTEN_TIMING_MODE
@@ -43,7 +45,7 @@ void Contract(
     blks_ctrct_batch_timer.Restart();
 #endif
 
-    pnew_blks = BlocksCtrctBatch<TenElemType>(
+    pnew_blks = BlocksCtrctBatch<QNT, TenElemType>(
         ctrct_axes_a, ctrct_axes_b,
         1.0, pta->cblocks(), ptb->cblocks());
 
@@ -70,13 +72,14 @@ void Contract(
 }
 
 
-template <typename TenElemType>
-std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
+template <typename QNT, typename TenElemType>
+std::vector<QNBlock<QNT, TenElemType> *> BlocksCtrctBatch(
     const std::vector<long> &ctrct_axes_a,
     const std::vector<long> &ctrct_axes_b,
     const TenElemType alpha,
-    const std::vector<QNBlock<TenElemType> *> &ta_blks,
-    const std::vector<QNBlock<TenElemType> *> &tb_blks) {
+    const std::vector<QNBlock<QNT, TenElemType> *> &ta_blks,
+    const std::vector<QNBlock<QNT, TenElemType> *> &tb_blks
+) {
   // Data prepare.
 #ifdef GQTEN_TIMING_MODE
   Timer blk_match_timer("blk_match");
@@ -127,7 +130,7 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
 
   // No match, return empty vector.
   if (blk_pairs == 0) {
-    return std::vector<QNBlock<TenElemType> *>();
+    return std::vector<QNBlock<QNT, TenElemType> *>();
   }
 
 #ifdef GQTEN_TIMING_MODE
@@ -159,7 +162,7 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
   auto gemm_batch_m_array = new MKL_INT[blk_pairs];
   auto gemm_batch_n_array = new MKL_INT[blk_pairs];
   auto gemm_batch_k_array = new MKL_INT[blk_pairs];
-  std::vector<QNBlock<TenElemType> *> pnew_blks(blk_pairs, nullptr);
+  std::vector<QNBlock<QNT, TenElemType> *> pnew_blks(blk_pairs, nullptr);
   auto gemm_batch_alpha_array = new TenElemType[blk_pairs];
   auto gemm_batch_beta_array = new TenElemType[blk_pairs] ();
   auto gemm_batch_grp_size_array = new MKL_INT[blk_pairs];
@@ -195,7 +198,8 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
 
         auto pnew_blk_qnscts = GetPNewBlkQNScts(
                                    ta_blks[i], tb_blks[j],
-                                   ctrct_axes_a, ctrct_axes_b);
+                                   ctrct_axes_a, ctrct_axes_b
+                               );
 
 #ifdef GQTEN_TIMING_MODE
         blk_match_data_assign_gen_new_blks_get_new_scts_timer.PrintElapsed(8);
@@ -204,20 +208,25 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
 #ifdef GQTEN_TIMING_MODE
         blk_match_data_assign_gen_new_blks_new_new_blk_timer.Restart();
 
-        auto pnew_blk_for_timing = new QNBlock<TenElemType>(pnew_blk_qnscts);
+        auto pnew_blk_for_timing = new QNBlock<QNT, TenElemType>(
+                                           pnew_blk_qnscts
+                                       );
 
         blk_match_data_assign_gen_new_blks_new_new_blk_timer.PrintElapsed(8);
 
         pnew_blks[blk_pair_cnt] = pnew_blk_for_timing;
 #else
-        pnew_blks[blk_pair_cnt] = new QNBlock<TenElemType>(pnew_blk_qnscts);
+        pnew_blks[blk_pair_cnt] = new QNBlock<QNT, TenElemType>(
+                                           pnew_blk_qnscts
+                                       );
 #endif
 
 
         // For contracting to scalar case.
         if (pnew_blks[blk_pair_cnt]->cdata() == nullptr) {
-          pnew_blks[blk_pair_cnt]->data() = (TenElemType *)malloc(
-                                                1 * sizeof(TenElemType));
+          pnew_blks[blk_pair_cnt]->data() = (TenElemType *) malloc(
+                                                1 * sizeof(TenElemType)
+                                            );
         }
 
 #ifdef GQTEN_TIMING_MODE
@@ -251,7 +260,8 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
                 ta_blks[i]->ndim,
                 ta_blks[i]->size,
                 ta_blks[i]->shape,
-                transed_axes_a);
+                transed_axes_a
+            );
 
 #ifdef GQTEN_TIMING_MODE
             blk_match_ten_trans_timer.PrintElapsed(8);
@@ -265,9 +275,11 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
         // Assign gemm_batch parameters.
         gemm_batch_a_array[blk_pair_cnt] = ta_to_ctrct_blks[i];
         gemm_batch_m_array[blk_pair_cnt] = MKL_INT(
-                                               ta_to_ctrct_blk_saved_dims[i]);
+                                               ta_to_ctrct_blk_saved_dims[i]
+                                           );
         gemm_batch_k_array[blk_pair_cnt] = MKL_INT(
-                                               ta_to_ctrct_blk_ctrct_dims[i]);
+                                               ta_to_ctrct_blk_ctrct_dims[i]
+                                           );
 
         // Deal with tb block.
         if (tb_to_ctrct_blks[j] == nullptr) {
@@ -292,11 +304,12 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
 #endif
 
             auto blk_data_transed_to_ctrct = DenseTensorTranspose(
-                tb_blks[j]->cdata(),
-                tb_blks[j]->ndim,
-                tb_blks[j]->size,
-                tb_blks[j]->shape,
-                transed_axes_b);
+                                                 tb_blks[j]->cdata(),
+                                                 tb_blks[j]->ndim,
+                                                 tb_blks[j]->size,
+                                                 tb_blks[j]->shape,
+                                                 transed_axes_b
+                                             );
             tb_to_ctrct_blks[j] = blk_data_transed_to_ctrct;
 
 #ifdef GQTEN_TIMING_MODE
@@ -322,7 +335,8 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
                   << gemm_batch_k_array[blk_pair_cnt]
                   << "blk_n_dim "
                   << std::setw(10) << std::left
-                  << gemm_batch_n_array[blk_pair_cnt] << std::endl;
+                  << gemm_batch_n_array[blk_pair_cnt]
+                  << std::endl;
 #endif
 
         ++blk_pair_cnt;
@@ -353,7 +367,8 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
       gemm_batch_beta_array,
       gemm_batch_c_array, gemm_batch_n_array,
       blk_pairs,
-      gemm_batch_grp_size_array); 
+      gemm_batch_grp_size_array
+  ); 
 
 #ifdef GQTEN_TIMING_MODE
   dgemm_batch_timer.PrintElapsed();
@@ -393,15 +408,17 @@ std::vector<QNBlock<TenElemType> *> BlocksCtrctBatch(
 }
 
 
-template <typename TenElemType>
+template <typename QNT, typename TenElemType>
 void InitCtrctedTen(
-    const GQTensor<TenElemType> *pta, const GQTensor<TenElemType> *ptb,
+    const GQTensor<QNT, TenElemType> *pta,
+    const GQTensor<QNT, TenElemType> *ptb,
     const std::vector<long> &ta_ctrct_axes,
     const std::vector<long> &tb_ctrct_axes,
-    GQTensor<TenElemType> *ptc) {
-  std::vector<Index> saved_idxs;
-  const std::vector<Index> &ta_idxs  = pta->indexes;
-  const std::vector<Index> &tb_idxs  = ptb->indexes;
+    GQTensor<QNT, TenElemType> *ptc
+) {
+  std::vector<Index<QNT>> saved_idxs;
+  const std::vector<Index<QNT>> &ta_idxs  = pta->indexes;
+  const std::vector<Index<QNT>> &tb_idxs  = ptb->indexes;
   for (size_t i = 0; i < ta_idxs.size(); ++i) {
     if (std::find(ta_ctrct_axes.begin(), ta_ctrct_axes.end(), i) ==
         ta_ctrct_axes.end()) {
@@ -414,14 +431,15 @@ void InitCtrctedTen(
       saved_idxs.push_back(ptb->indexes[i]);
     }
   }
-  *ptc = GQTensor<TenElemType>(saved_idxs);
+  *ptc = GQTensor<QNT, TenElemType>(saved_idxs);
 }
 
 
-template <typename TenElemType>
+template <typename QNT, typename TenElemType>
 void WrapCtrctBlocks(
-    std::vector<QNBlock<TenElemType> *> &pnew_blks,
-    GQTensor<TenElemType> *res_t) {
+    std::vector<QNBlock<QNT, TenElemType> *> &pnew_blks,
+    GQTensor<QNT, TenElemType> *res_t
+) {
   auto nnew_blk = pnew_blks.size();   // nnew_blk: number of new blocks.
   if (res_t->indexes.size() == 0 && nnew_blk != 0) {  // Contract to scalar case.
     TenElemType scalar = 0.0;
@@ -442,10 +460,11 @@ void WrapCtrctBlocks(
 }
 
 
-template <typename TenElemType>
-std::vector<QNBlock<TenElemType> *> MergeCtrctBlks(
-    const std::vector<QNBlock<TenElemType> *> &pblks) {
-  std::vector<QNBlock<TenElemType> *> merged_blks;
+template <typename QNT, typename TenElemType>
+std::vector<QNBlock<QNT, TenElemType> *> MergeCtrctBlks(
+    const std::vector<QNBlock<QNT, TenElemType> *> &pblks
+) {
+  std::vector<QNBlock<QNT, TenElemType> *> merged_blks;
 
 #ifdef GQTEN_TIMING_MODE
   Timer daxpy_timer("daxpy");
@@ -465,7 +484,8 @@ std::vector<QNBlock<TenElemType> *> MergeCtrctBlks(
         CblasAxpy(
             data_size,
             1.0, pnew_blk->cdata(), 1,
-            pmerged_blk->data(), 1);
+            pmerged_blk->data(), 1
+        );
 
 #ifdef GQTEN_TIMING_MODE
   daxpy_timer.PrintElapsed(8);
@@ -525,10 +545,11 @@ bool CtrctTransChecker(
 }
 
 
-template <typename TenElemType>
+template <typename QNT, typename TenElemType>
 std::vector<std::size_t> GenBlksPartHashTable(
-    const std::vector<QNBlock<TenElemType> *> &blks,
-    const std::vector<long> &ctrct_axes) {
+    const std::vector<QNBlock<QNT, TenElemType> *> &blks,
+    const std::vector<long> &ctrct_axes
+) {
   std::vector<std::size_t> part_hash_table(blks.size());
   for (std::size_t i = 0; i < blks.size(); i++) {
     part_hash_table[i] = blks[i]->PartHash(ctrct_axes);
@@ -537,12 +558,14 @@ std::vector<std::size_t> GenBlksPartHashTable(
 }
 
 
-template <typename TenElemType>
-std::vector<const QNSector *> GetPNewBlkQNScts(
-    const QNBlock<TenElemType> *pta_blk, const QNBlock<TenElemType> *ptb_blk,
+template <typename QNT, typename TenElemType>
+std::vector<const QNSector<QNT> *> GetPNewBlkQNScts(
+    const QNBlock<QNT, TenElemType> *pta_blk,
+    const QNBlock<QNT, TenElemType> *ptb_blk,
     const std::vector<long> &ctrct_axes_a,
-    const std::vector<long> &ctrct_axes_b) {
-  std::vector<const QNSector *> pnew_blk_qnscts; 
+    const std::vector<long> &ctrct_axes_b
+) {
+  std::vector<const QNSector<QNT> *> pnew_blk_qnscts; 
   auto pta_blk_qnscts = pta_blk->qnscts.data();
   auto ptb_blk_qnscts = ptb_blk->qnscts.data();
   for (long i = 0; i < pta_blk->ndim; ++i) {
@@ -561,11 +584,12 @@ std::vector<const QNSector *> GetPNewBlkQNScts(
 }
 
 
-template <typename TenElemType>
+template <typename QNT, typename TenElemType>
 void CalcBlkCtrctDimsInfo(
-    const std::size_t blk_idx_in_ten, const QNBlock<TenElemType> *pblk,
+    const std::size_t blk_idx_in_ten, const QNBlock<QNT, TenElemType> *pblk,
     const std::vector<long> &ctrct_axes,
-    long *saved_dims, long *ctrct_dims) {
+    long *saved_dims, long *ctrct_dims
+) {
   long ctrct_dim = 1;
   long saved_dim = 1;
   for (long i = 0; i < pblk->ndim; ++i) {
